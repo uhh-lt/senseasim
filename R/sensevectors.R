@@ -1,4 +1,4 @@
-#! /usr/bin/env RScript
+#!/usr/bin/env RScript
 
 sensevectors <- new.env(parent = .GlobalEnv)
 
@@ -187,13 +187,16 @@ with(sensevectors, {
 suppressPackageStartupMessages(library(argparse))
 
 # create parser object
-parser <- ArgumentParser()
+parser <- ArgumentParser(description='Get sensevectors.')
 # specify our desired options
 # by default ArgumentParser will add an help option
-parser$add_argument('-r', '--run', action='store_true', default=FALSE, help='Run this script.')
-parser$add_argument('-p', '--parallel', type='integer', default=1, help='Number of parallel processes [specify 0 for number of cores-1, default %(default)]', metavar='number')
-parser$add_argument('-i', '--input', type='character', default='-', help='Input file location [specify - for stdin, default %(default)]', metavar='filename')
-parser$add_argument('-o', '--output', type='character', default='-', help='Output file location [specify - for stdout, default %(default)]', metavar='filename')
+parser$add_argument('-r', '--run', action='store_true', default='FALSE', help='Run this script.')
+parser$add_argument('-p', '--parallel', nargs=1, type='integer', default=1, help='Number of parallel processes [specify 0 for number of cores-1, default %(default)s]', metavar='number')
+parser$add_argument('-i', '--input', nargs=1, type='character', default='-', help='Input file location [specify - for stdin, default %(default)s]', metavar='filename')
+parser$add_argument('-o', '--output', nargs=1, type='character', default='-', help='Output file location [specify - for stdout, default %(default)s]', metavar='filename')
+parser$add_argument('-m', '--vsmodel', type='character', default=sensevectors$.vsm_model, help='VSM model [default %(default)s]', metavar='modelname')
+parser$add_argument('-s', '--sensemodel', type='character', default=sensevectors$.jbt_sense_api, help='JoBimText sense model [default %(default)s]', metavar='modelname')
+parser$add_argument('-t', '--topn', type='integer', default=sensevectors$.topn_sense_terms, help='Use top n sense terms [default %(default)s]', metavar='number')
 
 # get command line options, if help option encountered print help and exit,
 # otherwise if options not found on command line then set defaults,
@@ -202,20 +205,29 @@ args <- parser$parse_args()
 # run only if specifically issued
 if(args$r) {
   inputfile <- NULL
-  if( args$i != '-' ){
-    inputfile <- args$i
+  if( args$input != '-' ){
+    inputfile <- args$input
   }
   outputfile <- NULL
-  if( args$o != '-' ){
-    outputfile <- args$o
+  if( args$output != '-' ){
+    outputfile <- args$output
   }
-  if(args$p == 1) {
+  if(args$vsmodel != sensevectors$.vsm_model){
+    sensevectors$.vsm_model <- args$vsmodel
+  }
+  if(args$sensemodel != sensevectors$.jbt_sense_api){
+    sensevectors$.jbt_sense_api <- args$sensemodel
+  }
+  if(args$topn != sensevectors$.topn_sense_terms){
+    sensevectors$.topn_sense_terms <- args$topn
+  }
+  if(args$parallel == 1) {
     sensevectors$run(inputfile = inputfile, outputfile = outputfile)
   }else{
     if(is.null(inputfile) || is.null(outputfile)){
       stop('Parallel mode requires an inputfile and an outputfile other than stdin and stdout!', call. = F)
     }
-    sensevectors$run_parallel(inputfile = inputfile, outputfile = outputfile, cl = args$p)
+    sensevectors$run_parallel(inputfile = inputfile, outputfile = outputfile, cl = args$parallel)
   }
 }else{
   message(sprintf('[%s-%d-%s] not running script. Specify \'-r\' parameter if you want to run the script from the commandline.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S')))

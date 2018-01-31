@@ -1,0 +1,24 @@
+#!/bin/bash
+
+if [[ -z $1 ]]; then
+  echo 'no filename provided'
+  exit 1
+fi
+
+if [[ $1 == '--print' ]]; then
+  
+  if [[ -z $2 ]]; then
+    echo 'no filename provided'
+    exit 1
+  fi
+  
+  Rscript -e 'f <- commandArgs(trailingOnly = T)[1]; x <- readRDS(f); print(x)' $2
+  
+else
+
+  Rscript -e 'f <- commandArgs(trailingOnly = T)[1]; x <- readRDS(f); write.table(x, file=stdout(), sep="\\t", col.names=T, row.names=T, quote=F )' $1
+  
+fi
+
+
+
