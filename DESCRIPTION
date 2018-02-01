@@ -11,10 +11,10 @@ LazyData: true
 URL: http://github.com/uhh-lt/senseasim
 Depends: R (>= 3.4.3)
 Imports:
-  flock,
-  tictoc,
-  bigmemory,
-  jsonlite,
-  rio,
-  parallel,
-  argparse
+  flock (>= 0.6),
+  tictoc (>= 1.0),
+  bigmemory (>= 4.5.33),
+  jsonlite (>= 1.5),
+  rio (>= 0.5.5),
+  parallel (>= 3.4.3),
+  argparse (>= 1.1.1)

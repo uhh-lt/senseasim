@@ -24,10 +24,10 @@ with(sensevectors, {
   init_cluster <- function(cl, inputfile, outputfile) {
     sensevectors$init(init_dependencies = F)
 
-    words <<- import(inputfile, sep=' ', fill=T, header=F)
-    clusterExport(cl, c('words','outputfile', '.jbt_sense_api', '.vsm_model', '.topn_sense_terms', 'sensevectors'))
+    words <<- rio::import(inputfile, sep=' ', fill=T, header=F)
+    parallel::clusterExport(cl, c('words','outputfile', '.jbt_sense_api', '.vsm_model', '.topn_sense_terms', 'sensevectors'))
 
-    clusterEvalQ(cl, {
+    parallel::clusterEvalQ(cl, {
       # initialization actions
       fout <- paste0(outputfile, Sys.getpid())
       export__ <<- NULL # do not export vectors to tempfile
@@ -95,12 +95,12 @@ with(sensevectors, {
     }
     # lock
     lockfile <- if(is.character(f)) paste0(f, '.lock') else '~/stdout.lock'
-    lck = lock(lockfile)
+    lck = flock::lock(lockfile)
     for(name in colnames(vectors)){
       cat(name, paste(vectors[,name], collapse=' '), '\n', file = f, fill = FALSE, append=TRUE)
     }
     # release lock
-    unlock(lck)
+    flock::unlock(lck)
   }
 
   get_and_write_sensevectors <- function(term, POS, fout) {
@@ -109,7 +109,7 @@ with(sensevectors, {
   }
 
   read_stdin <- function( lfun ) {
-    input<-file('stdin', 'r')
+    input <- file('stdin', 'r')
     while(TRUE) {
       row <- readLines(input, n=1)
       if ( length(row) <= 0 ) {
@@ -122,7 +122,7 @@ with(sensevectors, {
   run <- function(inputfile=NULL, outputfile=NULL){
     init(init_dependencies = T)
     if(is.character(inputfile)) {
-      words <- import(inputfile, sep=' ', fill=T, header=F)
+      words <- rio::import(inputfile, sep=' ', fill=T, header=F)
       r <- lapply(1:nrow(words), function(i) {
         term <- words[i,1]
         POS <- words[i,2]
@@ -146,15 +146,15 @@ with(sensevectors, {
     # suppressPackageStartupMessages(require(parallel))
     # suppressMessages(source('cclDef.R'))
 
-    tic()
+    tictoc::tic()
 
     # if cluster is null create a cluster of n-1 cores of n beeing the system core number
     if(is.null(cl)) {
-      cl <- cclDef$local(cores=detectCores()-1)
+      cl <- cclDef$local(cores=parallel::detectCores()-1)
     }
     if(is.numeric(cl)){
       if(cl < 1){
-        cl = detectCores()-1
+        cl = parallel::detectCores()-1
       }
       cl <- cclDef$local(cores=cl)
     }
@@ -162,7 +162,7 @@ with(sensevectors, {
     init_cluster(cl, inputfile, outputfile)
 
     # apply in parallel
-    r <- parLapply(cl, 1:nrow(words), function(i) {
+    r <- parallel::parLapply(cl, 1:nrow(words), function(i) {
       term <- words[i,1]
       POS <- words[i,2]
       get_and_write_sensevectors(term, POS, fout)
@@ -171,66 +171,66 @@ with(sensevectors, {
 
     # shutdown cluster
     message('shutting down cluster')
-    stopCluster(cl)
+    parallel::stopCluster(cl)
 
     toc()
   }
 
 })
 
-##
+# ##
+# #
+# # The script starts here
+# #
+# ##
 #
-# The script starts here
+# # suppressPackageStartupMessages(library(argparse))
 #
-##
-
-# suppressPackageStartupMessages(library(argparse))
-
-# create parser object
-parser <- ArgumentParser(description='Get sensevectors.')
-# specify our desired options
-# by default ArgumentParser will add an help option
-parser$add_argument('-r', '--run', action='store_true', default='FALSE', help='Run this script.')
-parser$add_argument('-p', '--parallel', nargs=1, type='integer', default=1, help='Number of parallel processes [specify 0 for number of cores-1, default %(default)s]', metavar='number')
-parser$add_argument('-i', '--input', nargs=1, type='character', default='-', help='Input file location [specify - for stdin, default %(default)s]', metavar='filename')
-parser$add_argument('-o', '--output', nargs=1, type='character', default='-', help='Output file location [specify - for stdout, default %(default)s]', metavar='filename')
-parser$add_argument('-m', '--vsmodel', type='character', default=sensevectors$.vsm_model, help='VSM model [default %(default)s]', metavar='modelname')
-parser$add_argument('-s', '--sensemodel', type='character', default=sensevectors$.jbt_sense_api, help='JoBimText sense model [default %(default)s]', metavar='modelname')
-parser$add_argument('-t', '--topn', type='integer', default=sensevectors$.topn_sense_terms, help='Use top n sense terms [default %(default)s]', metavar='number')
-
-# get command line options, if help option encountered print help and exit,
-# otherwise if options not found on command line then set defaults,
-args <- parser$parse_args()
-
-# run only if specifically issued
-if(args$r) {
-  inputfile <- NULL
-  if( args$input != '-' ){
-    inputfile <- args$input
-  }
-  outputfile <- NULL
-  if( args$output != '-' ){
-    outputfile <- args$output
-  }
-  if(args$vsmodel != sensevectors$.vsm_model){
-    sensevectors$.vsm_model <- args$vsmodel
-  }
-  if(args$sensemodel != sensevectors$.jbt_sense_api){
-    sensevectors$.jbt_sense_api <- args$sensemodel
-  }
-  if(args$topn != sensevectors$.topn_sense_terms){
-    sensevectors$.topn_sense_terms <- args$topn
-  }
-  if(args$parallel == 1) {
-    sensevectors$run(inputfile = inputfile, outputfile = outputfile)
-  }else{
-    if(is.null(inputfile) || is.null(outputfile)){
-      stop('Parallel mode requires an inputfile and an outputfile other than stdin and stdout!', call. = F)
-    }
-    sensevectors$run_parallel(inputfile = inputfile, outputfile = outputfile, cl = args$parallel)
-  }
-}else{
-  message(sprintf('[%s-%d-%s] not running script. Specify \'-r\' parameter if you want to run the script from the commandline.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S')))
-}
+# # create parser object
+# parser <- argparse::ArgumentParser(description='Get sensevectors.')
+# # specify our desired options
+# # by default ArgumentParser will add an help option
+# parser$add_argument('-r', '--run', action='store_true', default='FALSE', help='Run this script.')
+# parser$add_argument('-p', '--parallel', nargs=1, type='integer', default=1, help='Number of parallel processes [specify 0 for number of cores-1, default %(default)s]', metavar='number')
+# parser$add_argument('-i', '--input', nargs=1, type='character', default='-', help='Input file location [specify - for stdin, default %(default)s]', metavar='filename')
+# parser$add_argument('-o', '--output', nargs=1, type='character', default='-', help='Output file location [specify - for stdout, default %(default)s]', metavar='filename')
+# parser$add_argument('-m', '--vsmodel', type='character', default=sensevectors$.vsm_model, help='VSM model [default %(default)s]', metavar='modelname')
+# parser$add_argument('-s', '--sensemodel', type='character', default=sensevectors$.jbt_sense_api, help='JoBimText sense model [default %(default)s]', metavar='modelname')
+# parser$add_argument('-t', '--topn', type='integer', default=sensevectors$.topn_sense_terms, help='Use top n sense terms [default %(default)s]', metavar='number')
+#
+# # get command line options, if help option encountered print help and exit,
+# # otherwise if options not found on command line then set defaults,
+# args <- parser$parse_args()
+#
+# # run only if specifically issued
+# if(args$r) {
+#   inputfile <- NULL
+#   if( args$input != '-' ){
+#     inputfile <- args$input
+#   }
+#   outputfile <- NULL
+#   if( args$output != '-' ){
+#     outputfile <- args$output
+#   }
+#   if(args$vsmodel != sensevectors$.vsm_model){
+#     sensevectors$.vsm_model <- args$vsmodel
+#   }
+#   if(args$sensemodel != sensevectors$.jbt_sense_api){
+#     sensevectors$.jbt_sense_api <- args$sensemodel
+#   }
+#   if(args$topn != sensevectors$.topn_sense_terms){
+#     sensevectors$.topn_sense_terms <- args$topn
+#   }
+#   if(args$parallel == 1) {
+#     sensevectors$run(inputfile = inputfile, outputfile = outputfile)
+#   }else{
+#     if(is.null(inputfile) || is.null(outputfile)){
+#       stop('Parallel mode requires an inputfile and an outputfile other than stdin and stdout!', call. = F)
+#     }
+#     sensevectors$run_parallel(inputfile = inputfile, outputfile = outputfile, cl = args$parallel)
+#   }
+# }else{
+#   message(sprintf('[%s-%d-%s] not running script. Specify \'-r\' parameter if you want to run the script from the commandline.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S')))
+# }
 
 

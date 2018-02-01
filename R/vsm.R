@@ -56,7 +56,6 @@ with(vsm, {
       names(.models_loaded)[[length(.models_loaded)]] <<- newmodel$name
     }
 
-    # library(bigmemory)
     options(bigmemory.allow.dimnames=TRUE)
 
     # bigmatrix descriptorfile
@@ -73,7 +72,7 @@ with(vsm, {
     # else read vector space matrix as bigmatrix
     message(sprintf('[%s-%d-%s] loading Vector Space Matrix \'%s\'', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), modelname))
     newmodel <- newEmptyObject()
-    newmodel$M <- attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc))
+    newmodel$M <- bigmemory::attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc))
     newmodel$vocab <- rownames(newmodel$M)
     newmodel$name <- modelname
     newmodel$transform <- models[[modelname]][[2]]
