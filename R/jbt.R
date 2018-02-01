@@ -6,8 +6,8 @@
 #'
 #'
 
-suppressPackageStartupMessages(library(jsonlite))
-suppressMessages(source('cache.R'))
+# suppressPackageStartupMessages(library(jsonlite))
+# suppressMessages(source('cache.R'))
 
 jbt <- new.env(parent = .GlobalEnv)
 

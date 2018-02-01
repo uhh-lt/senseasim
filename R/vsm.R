@@ -56,7 +56,7 @@ with(vsm, {
       names(.models_loaded)[[length(.models_loaded)]] <<- newmodel$name
     }
 
-    library(bigmemory)
+    # library(bigmemory)
     options(bigmemory.allow.dimnames=TRUE)
 
     # bigmatrix descriptorfile

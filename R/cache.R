@@ -4,7 +4,7 @@
 #'
 #'
 
-suppressPackageStartupMessages(library(jsonlite))
+# suppressPackageStartupMessages(library(jsonlite))
 
 cache <- new.env(parent = .GlobalEnv)
 

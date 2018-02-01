@@ -9,11 +9,11 @@ with(sensevectors, {
   .topn_sense_terms <- 5
 
   init <- function(init_dependencies = F) {
-    suppressPackageStartupMessages(library(flock))
-    suppressPackageStartupMessages(library(rio))
-    suppressMessages(source('cache.R'))
-    suppressMessages(source('jbt.R'))
-    suppressMessages(source('vsm.R'))
+    # suppressPackageStartupMessages(library(flock))
+    # suppressPackageStartupMessages(library(rio))
+    # suppressMessages(source('cache.R'))
+    # suppressMessages(source('jbt.R'))
+    # suppressMessages(source('vsm.R'))
 
     if(init_dependencies){
       vsm$load_default_matrices(c(.vsm_model))
@@ -142,9 +142,9 @@ with(sensevectors, {
 
   run_parallel <- function(inputfile, outputfile, cl = NULL) {
     # measure computing time
-    suppressPackageStartupMessages(require(tictoc))
-    suppressPackageStartupMessages(require(parallel))
-    suppressMessages(source('cclDef.R'))
+    # suppressPackageStartupMessages(require(tictoc))
+    # suppressPackageStartupMessages(require(parallel))
+    # suppressMessages(source('cclDef.R'))
 
     tic()
 
@@ -184,7 +184,7 @@ with(sensevectors, {
 #
 ##
 
-suppressPackageStartupMessages(library(argparse))
+# suppressPackageStartupMessages(library(argparse))
 
 # create parser object
 parser <- ArgumentParser(description='Get sensevectors.')
