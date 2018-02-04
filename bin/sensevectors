@@ -12,7 +12,7 @@ args <- parser$parse_args()
 
 if (args$install) {
   devtools::install_github('uhh-lt/senseasim')
-  return()
+  stop(.call=F)
 }
 
 # run only if specifically specified
