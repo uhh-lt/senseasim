@@ -18,6 +18,8 @@ if (args$install) {
 # run only if specifically specified
 if(args$run) {
 
+  library(senseasim)
+
   # recreate parser object
   parser <- argparse::ArgumentParser(description='Get sensevectors.')
   parser$add_argument('--install', action='store_true', default='FALSE', help='Install sensasim R package.')
@@ -28,7 +30,6 @@ if(args$run) {
   parser$add_argument('-s', '--sensemodel', type='character', default=sensevectors$.jbt_sense_api, help='JoBimText sense model [default %(default)s]', metavar='modelname')
   parser$add_argument('-t', '--topn', type='integer', default=sensevectors$.topn_sense_terms, help='Use top n sense terms [default %(default)s]', metavar='number')
 
-  library(senseasim)
   inputfile <- NULL
   if( args$input != '-' ){
     inputfile <- args$input
