@@ -9,7 +9,7 @@ License: Apache-V2
 Encoding: UTF-8
 LazyData: true
 URL: http://github.com/uhh-lt/senseasim
-Depends: R (>= 3.4.3)
+Depends: R (>= 3.4.1)
 Imports:
   flock (>= 0.6),
   tictoc (>= 1.0),
