@@ -1,14 +1,15 @@
 #!/usr/bin/env Rscript
 
+cliargs = commandArgs(trailingOnly=TRUE)
 
 # create parser object
 parser <- argparse::ArgumentParser(description='Get sensevectors.')
 # specify desired options by default ArgumentParser will add an help option
 parser$add_argument('--install', action='store_true', default='FALSE', help='Install sensasim R package.')
-parser$add_argument('-r', '--run', action='store_true', default='FALSE', help='Run this script.')
+parser$add_argument('--run', action='store_true', default='FALSE', help='Run this script.')
 # get command line options, if help option encountered print help and exit,
 # otherwise if options not found on command line then set defaults,
-args <- parser$parse_args()
+args <- parser$parse_args(cliargs)
 
 if (args$install) {
   devtools::install_github('uhh-lt/senseasim')
@@ -18,11 +19,16 @@ if (args$install) {
 # run only if specifically specified
 if(args$run) {
 
+  if(!exists('newEmptyObject', mode = "function")){
+    newEmptyObject <<- c
+  }
+
   library(senseasim)
 
   # recreate parser object
   parser <- argparse::ArgumentParser(description='Get sensevectors.')
   parser$add_argument('--install', action='store_true', default='FALSE', help='Install sensasim R package.')
+  parser$add_argument('--run', action='store_true', default='FALSE', help='Run this script.')
   parser$add_argument('-p', '--parallel', nargs=1, type='integer', default=1, help='Number of parallel processes [specify 0 for number of cores-1, default %(default)s]', metavar='number')
   parser$add_argument('-i', '--input', nargs=1, type='character', default='-', help='Input file location [specify - for stdin, default %(default)s]', metavar='filename')
   parser$add_argument('-o', '--output', nargs=1, type='character', default='-', help='Output file location [specify - for stdout, default %(default)s]', metavar='filename')
@@ -30,6 +36,7 @@ if(args$run) {
   parser$add_argument('-s', '--sensemodel', type='character', default=sensevectors$.jbt_sense_api, help='JoBimText sense model [default %(default)s]', metavar='modelname')
   parser$add_argument('-t', '--topn', type='integer', default=sensevectors$.topn_sense_terms, help='Use top n sense terms [default %(default)s]', metavar='number')
 
+  args <- parser$parse_args(cliargs)
   inputfile <- NULL
   if( args$input != '-' ){
     inputfile <- args$input
