@@ -1,4 +1,4 @@
-#!/usr/bin/env RScript
+#!/usr/bin/env Rscript
 
 # create parser object
 parser <- argparse::ArgumentParser(description='Get sensevectors.')
