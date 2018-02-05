@@ -14,6 +14,7 @@ cliargstrimmed <- Filter(function(a) a == '--install' || a == '--run', cliargs)
 args <- parser$parse_args(cliargstrimmed)
 
 if (args$install) {
+  install.packages('devtools')
   devtools::install_github('uhh-lt/senseasim')
 }
 
