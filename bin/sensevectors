@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript --vanilla --verbose --default-packages=methods
+#!/usr/bin/env Rscript --vanilla --verbose --default-packages=methods,utils
 
 cliargs = commandArgs(trailingOnly=TRUE)
 
@@ -13,7 +13,6 @@ args <- parser$parse_args(cliargs)
 
 if (args$install) {
   devtools::install_github('uhh-lt/senseasim')
-  stop(.call=F)
 }
 
 # run only if specifically specified

@@ -79,7 +79,7 @@ with(jbt, {
         # get from api
         message(sprintf('[%s-%d-%s] querying  \'%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), url))
         # try to fetch and read json document
-        js_doc <- fromJSON(txt = url)
+        js_doc <- jsonlite::fromJSON(txt = url)
         return(js_doc)
       },
       error = function(cond) {
