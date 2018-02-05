@@ -60,5 +60,5 @@ if(args$run) {
     sensevectors$run_parallel(inputfile = inputfile, outputfile = outputfile, cl = args$parallel)
   }
 }else{
-  message(sprintf('[%s-%d-%s] not running script. Specify \'-r\' parameter if you want to run the script from the commandline.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S')))
+  message(sprintf('[%s-%d-%s] not running script. Specify \'--run\' parameter if you want to run the script from the commandline.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S')))
 }
