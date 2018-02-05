@@ -1,4 +1,6 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript --vanilla --verbose --default-packages=methods
+
+options(bigmemory.allow.dimnames = TRUE)
 
 cliargs = commandArgs(trailingOnly=TRUE)
 

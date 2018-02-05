@@ -1,4 +1,3 @@
-
 vsm <- new.env(parent = .GlobalEnv)
 
 with(vsm, {
@@ -46,6 +45,8 @@ with(vsm, {
 
   load_matrix <- function(modelname, models) {
 
+    options(bigmemory.allow.dimnames = TRUE)
+
     if(modelname %in% names(.models_loaded)){
       message(sprintf('[%s-%d-%s] model \'%s\' already loaded. \nDo you need to run \'toBigMatrix.R\'?', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), modelname))
       return(T)
@@ -67,10 +68,13 @@ with(vsm, {
     if(!file.exists(fdesc))
       stop(sprintf('[%s-%d-%s] loading Vector Space Matrix from \'%s\' failed, file does not exists. \nDo you need to run \'toBigMatrix.R\'?', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), fdesc))
 
+    message(getOption("bigmemory.allow.dimnames"))
+    message(options()$bigmemory.allow.dimnames)
+
     # else read vector space matrix as bigmatrix
     message(sprintf('[%s-%d-%s] loading Vector Space Matrix \'%s\'', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), modelname))
     newmodel <- newEmptyObject()
-    options(bigmemory.allow.dimnames=TRUE)
+
     newmodel$M <- bigmemory::attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc))
     newmodel$vocab <- rownames(newmodel$M)
     newmodel$name <- modelname
