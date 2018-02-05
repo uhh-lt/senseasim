@@ -19,10 +19,6 @@ if (args$install) {
 # run only if specifically specified
 if(args$run) {
 
-  if(!exists('newEmptyObject', mode = "function")){
-    newEmptyObject <<- c
-  }
-
   library(senseasim)
 
   # recreate parser object
