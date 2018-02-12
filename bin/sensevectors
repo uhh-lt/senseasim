@@ -1,20 +1,30 @@
-#!/usr/bin/env Rscript --vanilla --verbose --default-packages=methods,utils
+#!/usr/bin/env Rscript --vanilla --default-packages=methods,utils
 
 cliargs = commandArgs(trailingOnly=TRUE)
 
 # create parser object
 parser <- argparse::ArgumentParser(description='Get sensevectors.')
+
 # specify desired options by default ArgumentParser will add an help option
 parser$add_argument('--install', action='store_true', default='FALSE', help='Install sensasim R package.')
 parser$add_argument('--run', action='store_true', default='FALSE', help='Run this script.')
+parser$add_argument('-p', '--parallel', nargs=1, type='integer', default=1, help='Number of parallel processes [specify 0 for number of cores-1, default %(default)s]', metavar='number')
+parser$add_argument('-i', '--input', nargs=1, type='character', default='-', help='Input file location [specify - for stdin, default %(default)s]', metavar='filename')
+parser$add_argument('-o', '--output', nargs=1, type='character', default='-', help='Output file location [specify - for stdout, default %(default)s]', metavar='filename')
+parser$add_argument('-m', '--vsmodel', type='character', help='VSM model', metavar='modelname')
+parser$add_argument('-s', '--sensemodel', type='character', help='JoBimText sense model', metavar='modelname')
+parser$add_argument('-t', '--topn', type='integer', nargs=1,default=3, help='Use top n sense terms [default %(default)s]', metavar='number')
+parser$add_argument('--models', action='store_true', default='FALSE', help='Get more details of default models.')
+
 # get command line options, if help option encountered print help and exit,
 # otherwise if options not found on command line then set defaults,
 
-cliargstrimmed <- Filter(function(a) a == '--install' || a == '--run', cliargs)
-args <- parser$parse_args(cliargstrimmed)
+args <- parser$parse_args(cliargs)
 
 if (args$install) {
-  install.packages('devtools')
+  if(!('devtools' %in% installed.packages()[,'Package'])){
+    stop('Please install R package \'devtools\' (R> install.packages("devtools")). ', call. = F)
+  }
   devtools::install_github('uhh-lt/senseasim')
 }
 
@@ -23,19 +33,14 @@ if(args$run) {
 
   library(senseasim)
 
-  # recreate parser object
-  parser <- argparse::ArgumentParser(description='Get sensevectors.')
-  parser$add_argument('--install', action='store_true', default='FALSE', help='Install sensasim R package.')
-  parser$add_argument('--run', action='store_true', default='FALSE', help='Run this script.')
-  parser$add_argument('-p', '--parallel', nargs=1, type='integer', default=1, help='Number of parallel processes [specify 0 for number of cores-1, default %(default)s]', metavar='number')
-  parser$add_argument('-i', '--input', nargs=1, type='character', default='-', help='Input file location [specify - for stdin, default %(default)s]', metavar='filename')
-  parser$add_argument('-o', '--output', nargs=1, type='character', default='-', help='Output file location [specify - for stdout, default %(default)s]', metavar='filename')
-  parser$add_argument('-m', '--vsmodel', type='character', default=sensevectors$.vsm_model, help='VSM model [default %(default)s]', metavar='modelname')
-  parser$add_argument('-s', '--sensemodel', type='character', default=sensevectors$.jbt_sense_api, help='JoBimText sense model [default %(default)s]', metavar='modelname')
-  parser$add_argument('-t', '--topn', type='integer', default=sensevectors$.topn_sense_terms, help='Use top n sense terms [default %(default)s]', metavar='number')
-
   args <- parser$parse_args(cliargs)
   inputfile <- NULL
+  if(args$models){
+    # generate help string
+    m <- sensevectors$.defaults
+    message(sprintf('%s: \'%s\'\n', names(m), m))
+    q()
+  }
   if( args$input != '-' ){
     inputfile <- args$input
   }
@@ -43,14 +48,14 @@ if(args$run) {
   if( args$output != '-' ){
     outputfile <- args$output
   }
-  if(args$vsmodel != sensevectors$.vsm_model){
-    sensevectors$.vsm_model <- args$vsmodel
+  if(!is.null(args$vsmodel)){
+    sensevectors$.defaults$vsm_model <- args$vsmodel
   }
-  if(args$sensemodel != sensevectors$.jbt_sense_api){
-    sensevectors$.jbt_sense_api <- args$sensemodel
+  if(!is.null(args$sensemodel)){
+    sensevectors$.defaults$jbt_sense_api <- args$sensemodel
   }
-  if(args$topn != sensevectors$.topn_sense_terms){
-    sensevectors$.topn_sense_terms <- args$topn
+  if(args$topn != sensevectors$.defaults$topn_sense_terms){
+    sensevectors$.defaults$topn_sense_terms <- args$topn
   }
   if(args$parallel == 1) {
     sensevectors$run(inputfile = inputfile, outputfile = outputfile)

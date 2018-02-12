@@ -3,13 +3,15 @@ sensevectors <- new.env(parent = .GlobalEnv)
 
 with(sensevectors, {
 
-  .jbt_sense_api <- 'stanfordnew_fine'
-  .vsm_model <- 'EN_100k_lsa'
-  .topn_sense_terms <- 5
+  .defaults <- list(
+    jbt_sense_api = 'stanfordnew_fine',
+    vsm_model = 'EN_100k_lsa',
+    topn_sense_terms = 5
+  )
 
   init <- function(init_dependencies = F) {
     if(init_dependencies){
-      vsm$load_default_matrices(c(.vsm_model))
+      vsm$load_default_matrices(c(.defaults$vsm_model))
     }
   }
 
@@ -17,7 +19,7 @@ with(sensevectors, {
     sensevectors$init(init_dependencies = F)
 
     words <<- rio::import(inputfile, sep=' ', fill=T, header=F)
-    parallel::clusterExport(cl, c('words','outputfile', '.jbt_sense_api', '.vsm_model', '.topn_sense_terms', 'sensevectors'))
+    parallel::clusterExport(cl, c('words','outputfile', 'sensevectors'))
 
     parallel::clusterEvalQ(cl, {
       # initialization actions
@@ -27,9 +29,9 @@ with(sensevectors, {
   }
 
   get_sense_vectors <- function(term, POS) {
-    jb_sense_lists <- Filter(function(l) length(l) > 0, jbt$get_JBT_senses(term, POS, isas = F,  model_template = jbt$.sense_models[[.jbt_sense_api]], modelname = .jbt_sense_api))
+    jb_sense_lists <- Filter(function(l) length(l) > 0, jbt$get_JBT_senses(term, POS, isas = F,  model_template = jbt$.sense_models[[.jbt_sense_api]], modelname = .defaults$jbt_sense_api))
     message(sprintf('[%s-%d-%s] found %d non-empty senses for term=\'%s#%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), length(jb_sense_lists), term, POS))
-    vectors <- get_sense_vectors_from_jbtsenseLists(term, POS, jb_sense_lists, .vsm_model, .topn_sense_terms)
+    vectors <- get_sense_vectors_from_jbtsenseLists(term, POS, jb_sense_lists, .defaults$vsm_model, .defaults$topn_sense_terms)
     return(vectors)
   }
 
