@@ -162,7 +162,7 @@ with(sensevectors, {
     })
 
     # shutdown cluster
-    message('shutting down cluster')
+    message(sprintf('[%s-%d-%s] shutting down cluster.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S')))
     parallel::stopCluster(cl)
 
     tictoc::toc()
