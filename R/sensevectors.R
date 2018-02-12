@@ -19,12 +19,14 @@ with(sensevectors, {
     sensevectors$init(init_dependencies = F)
 
     words <<- rio::import(inputfile, sep=' ', fill=T, header=F)
-    parallel::clusterExport(cl, c('words','outputfile', 'sensevectors'))
+    parallel::clusterExport(cl, c('words','sensevectors'), envir = .GlobalEnv)
+    parallel::clusterExport(cl, c('outputfile'), envir = environment())
 
     parallel::clusterEvalQ(cl, {
       # initialization actions
-      fout <- paste0(outputfile, Sys.getpid())
-      export__ <<- NULL # do not export vectors to tempfile
+      local_outputfile <<- paste0(outputfile, Sys.getpid())
+      sensevectors$init(init_dependencies = T)
+      message(sprintf('[%s-%d-%s] saving to \'%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), local_outputfile))
     })
   }
 
@@ -88,13 +90,13 @@ with(sensevectors, {
       f <- stdout()
     }
     # lock
-    lockfile <- if(is.character(f)) paste0(f, '.lock') else '~/stdout.lock'
-    lck = flock::lock(lockfile)
+    # lockfile <- if(is.character(f)) paste0(f, '.lock') else '~/stdout.lock'
+    # lck = flock::lock(lockfile)
     for(name in colnames(vectors)){
       cat(name, paste(vectors[,name], collapse=' '), '\n', file = f, fill = FALSE, append=TRUE)
     }
     # release lock
-    flock::unlock(lck)
+    # flock::unlock(lck)
   }
 
   get_and_write_sensevectors <- function(term, POS, fout) {
@@ -155,7 +157,7 @@ with(sensevectors, {
     r <- parallel::parLapply(cl, 1:nrow(words), function(i) {
       term <- words[i,1]
       POS <- words[i,2]
-      get_and_write_sensevectors(term, POS, fout)
+      get_and_write_sensevectors(term, POS, local_outputfile)
       return(T)
     })
 
@@ -163,7 +165,7 @@ with(sensevectors, {
     message('shutting down cluster')
     parallel::stopCluster(cl)
 
-    toc()
+    tictoc::toc()
   }
 
 })
