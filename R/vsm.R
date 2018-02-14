@@ -4,21 +4,53 @@ with(vsm, {
 
   .models_loaded <- list()
 
-  .models <- function(){
-    return(list(
-      'w2v_gnews_300'   = list(paste0(Sys.getenv(c('DATA_HOME')),'/w2v/GoogleNews-vectors-negative300.txt'), function(w) w),
-      'glove_6B_50d'    = list(paste0(Sys.getenv(c('DATA_HOME')),'/glove/glove.6B.50d.txt'), function(w) tolower(w)),
-      'glove_6B_50d_1K' = list(paste0(Sys.getenv(c('DATA_HOME')),'/glove/glove.6B.50d.1K.txt'), function(w) tolower(w)),
-      'glove_6B_300d'   = list(paste0(Sys.getenv(c('DATA_HOME')),'/glove/glove.6B.300d.txt'), function(w) tolower(w)),
-      'sympat300d'      = list(paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_300.txt'), function(w) tolower(w)),
-      'sympat500d'      = list(paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_500.txt'), function(w) tolower(w)),
-      'sympat10000d'    = list(paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_10000.txt'), function(w) tolower(w)),
-      'paragramSL'      = list(paste0(Sys.getenv(c('DATA_HOME')),'/paragram/paragram_300_sl999/paragram_300_sl999.txt'), function(w) tolower(w)),
-      'paragramWS'      = list(paste0(Sys.getenv(c('DATA_HOME')),'/paragram/paragram_300_ws353/paragram_300_ws353.txt'), function(w) tolower(w)),
-      'EN_100k_hal_lsa' = list(paste0(Sys.getenv(c('DATA_HOME')),'/lsafun/EN_100k'), function(w) tolower(w)),
-      'EN_100k_lsa'     = list(paste0(Sys.getenv(c('DATA_HOME')),'/lsafun/EN_100k_lsa'), function(w) tolower(w))
-    ))
-  }
+  .models <- function() list(
+    w2v_gnews_300   = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/w2v/GoogleNews-vectors-negative300.txt'),
+      transformer = function(w) w
+    ),
+    glove_6B_50d = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/glove/glove.6B.50d.txt'),
+      transformer    = function(w) tolower(w)
+    ),
+    glove_6B_50d_1K = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/glove/glove.6B.50d.1K.txt'),
+      transformer    = function(w) tolower(w)
+    ),
+    glove_6B_300d = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/glove/glove.6B.300d.txt'),
+      transformer    = function(w) tolower(w)
+    ),
+    sympat300d = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_300.txt'),
+      transformer    = function(w) tolower(w)
+    ),
+    sympat500d = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_500.txt'),
+      transformer    = function(w) tolower(w)
+    ),
+    sympat10000d = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_10000.txt'),
+      transformer    = function(w) tolower(w)
+    ),
+    paragramSL = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/paragram/paragram_300_sl999/paragram_300_sl999.txt'),
+      transformer    = function(w) tolower(w)
+    ),
+    paragramWS = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/paragram/paragram_300_ws353/paragram_300_ws353.txt'),
+      transformer    = function(w) tolower(w)
+    ),
+    EN_100k_hal_lsa = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/lsafun/EN_100k'),
+      transformer    = function(w) tolower(w)
+    ),
+    EN_100k_lsa = list(
+      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/lsafun/EN_100k_lsa'),
+      transformer    = function(w) tolower(w)
+    )
+  )
+
 
   .sensemodels <- function(){
     return(list(
