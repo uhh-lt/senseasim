@@ -37,10 +37,9 @@ with(sensevectors, {
         if(is.null(dim(vectors))) # NULL or only one vector
           vectors
         else
-          colMeans(vectors) # get_vectors_from_jbtterms return row vectors, this is why we take colMeans here, sapply converts them to column vectors
+          colMeans(vectors) # vsm returns row vectors, this is why we take colMeans here, sapply converts them to column vectors
       }
       # remember the column name
-
       colname_ <- paste(term_, paste(sense_terms, collapse=','), collapse=' ')
       colnames_ <<- c(colnames_, colname_)
       return(average_vector)
