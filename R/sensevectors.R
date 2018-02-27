@@ -7,18 +7,34 @@ with(sensevectors, {
     jbt_sense_api = 'stanfordnew_fine',
     vsm_model = 'EN_100k_lsa',
     topn_sense_terms = 5,
-    lambda = .5
+    shift_lambda = .5
   )
 
   init <- function() {
     vsm$load_default_matrices(c(.defaults$vsm_model))
   }
 
-  get_sense_vectors <- function(term, POS, vsm_modelname = .defaults$vsm_model, jbt_sense_api = .defaults$jbt_sense_api, topn_sense_terms = .defaults$topn_sense_terms, lamdba = .defaults$lambda) {
+  get_sense_vectors <- function(term, POS, vsm_modelname = .defaults$vsm_model, jbt_sense_api = .defaults$jbt_sense_api, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
     jb_sense_lists <- Filter(function(l) length(l) > 0, jbt$get_JBT_senses(term, POS, isas = F,  model_template = jbt$.sense_models[[jbt_sense_api]], modelname = jbt_sense_api))
     message(sprintf('[%s-%d-%s] found %d non-empty senses for term=\'%s#%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), length(jb_sense_lists), term, POS))
-    vectors <- get_sense_vectors_from_jbtsenseLists(term, POS, jb_sense_lists, vsm_modelname, topn_sense_terms)
-    return(vectors)
+    sense_vectors <- get_sense_vectors_from_jbtsenseLists(term, POS, jb_sense_lists, vsm_modelname, topn_sense_terms)
+    # now shift
+    if(shift_lambda <= 0){
+      # term vector has no influence
+      return(sense_vectors)
+    }
+    # get the term vector
+    term_vector <- vsm$get_vector(term, vsm_modelname) # row vector
+    term_vector_repl <- replicate(ncol(sense_vectors), term_vector) # make replicated column vectors
+    if(shift_lambda >= 1) {
+      # sense vectors will have no influence
+      colnames(term_vector_repl) <- colnames(sense_vectors)
+      return(term_vector_repl)
+    }
+    # otherwise apply the shift
+    sense_vectors_shifted <- (shift_lambda * term_vector_repl) + ((1-shift_lambda) * sense_vectors)
+    colnames(sense_vectors_shifted) <- colnames(sense_vectors)
+    return(sense_vectors_shifted)
   }
 
   get_sense_vectors_from_jbtsenseLists <- function(term, POS, jb_sense_lists, vsm_modelname = .defaults$vsm_model, topn_sense_terms = .defaults$topn_sense_terms) {
