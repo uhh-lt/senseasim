@@ -31,7 +31,6 @@ with(sensevectors, {
     colnames_ = c()
     sense_vectors <- sapply(jb_sense_lists, function(list_of_jb_terms) {
       sense_terms <- list_of_jb_terms[1:min(length(list_of_jb_terms), topn_sense_terms)]
-      sense_terms <- sapply(sense_terms, function(x) gsub('\\s+','', x)) # clean terms
       vectors <- get_vectors_from_jbtterms(sense_terms, vsm_modelname)
       # the average vector is the sense vector
       average_vector <- {
