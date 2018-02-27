@@ -11,12 +11,12 @@ jbt <- new.env(parent = .GlobalEnv)
 with(jbt, {
 
   .sim_models = list(
-    'stanfordnew' = 'http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/stanfordNew/jo/similar/%s%%23%s?numberOfEntries=1000&format=json'
+    stanfordnew = 'http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/stanfordNew/jo/similar/%s%%23%s?numberOfEntries=1000&format=json'
   )
 
   .sense_models = list(
-    'stanfordnew_fine' = 'http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/stanfordNew/jo/senses/%s%%23%s?format=json&sensetype=CW-finer',
-    'stanfordnew_broad' = 'http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/stanfordNew/jo/senses/%s%%23%s?&format=json&sensetype=CW'
+    stanfordnew_fine = 'http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/stanfordNew/jo/senses/%s%%23%s?format=json&sensetype=CW-finer',
+    stanfordnew_broad = 'http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/stanfordNew/jo/senses/%s%%23%s?&format=json&sensetype=CW'
   )
 
   #'
@@ -92,7 +92,8 @@ with(jbt, {
   #'
   #'
   #'
-  get_JBT_senses <- function(term, POS = 'N', model_template = .sense_models[[1]], modelname = names(.sense_models)[[1]], isas = F) {
+  get_JBT_senses <- function(term, POS = 'N', modelname = names(.sense_models)[[1]], isas = F) {
+    model_template = .sense_models[[modelname]]
     jbtPOS <- .convertToJbtPOS(POS)
     fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsenseapi__', modelname, '__'))
     json_doc <- cache$load(fname, function() {
@@ -103,10 +104,10 @@ with(jbt, {
     if (!is.null(json_doc)) {
       if (length(json_doc$result) > 0){
         if (isas){
-          return(json_doc$result$isas)
+          return(Filter(function(l) length(l) > 0, json_doc$result$isas))
         }
         # else
-        return(json_doc$result$senses)
+        return(Filter(function(l) length(l) > 0, json_doc$result$senses))
       }
     }
     # else

@@ -15,7 +15,7 @@ with(sensevectors, {
   }
 
   get_sense_vectors <- function(term, POS, vsm_modelname = .defaults$vsm_model, jbt_sense_api = .defaults$jbt_sense_api, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
-    jb_sense_lists <- Filter(function(l) length(l) > 0, jbt$get_JBT_senses(term, POS, isas = F,  model_template = jbt$.sense_models[[jbt_sense_api]], modelname = jbt_sense_api))
+    jb_sense_lists <- jbt$get_JBT_senses(term, POS, isas = F, modelname = jbt_sense_api)
     message(sprintf('[%s-%d-%s] found %d non-empty senses for term=\'%s#%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), length(jb_sense_lists), term, POS))
     sense_vectors <- get_sense_vectors_from_jbtsenseLists(term, POS, jb_sense_lists, vsm_modelname, topn_sense_terms)
     # now shift
@@ -65,7 +65,7 @@ with(sensevectors, {
     return(sense_vectors)
   }
 
-  get_vectors_from_jbtterms <- function(jbtterms, vsm_modelname) {
+  get_vectors_from_jbtterms <- function(jbtterms, vsm_modelname, .as_column_vectors = F) {
     model <- vsm$.models_loaded[[vsm_modelname]]
     # clear POS from result terms
     terms <- sapply(jbtterms, function(x) gsub('\\s+','', gsub('#.*','',gsub(':.*','',x)))) # clean terms, either isas (':') or senses ('#') and remove whitespaces
@@ -76,9 +76,17 @@ with(sensevectors, {
     if(length(covered_mterms_indices) <= 0){
       # if no known term in the sense cluster use the unknown vector???
       message(sprintf("[%s-%d-%s] sense terms '%s' are unknown.", gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(),format(Sys.time(), "%m%d-%H%M%S"), paste(mterms,collapse = ', ')))
-      return(matrix(NA, ncol=ncol(model$M))) # create a NA valued matrix with one vector and the dim of M
+      if(.as_column_vectors){
+        return(matrix(NA, ncol=1, nrow=ncol(model$M))) # create a NA valued matrix with one vector and the dim of M
+      }
+      return(matrix(NA, nrow=1, ncol=ncol(model$M))) # create a NA valued matrix with one vector and the dim of M
     }
     vectors <- model$M[covered_mterms_indices,]
+    rownames(vectors) <- sense_terms
+    if(.as_column_vectors){
+      vectors <- matrix(vectors, nrow=ncol(model$M), byrow = T)
+      colnames(vectors) <- sense_terms
+    }
     return(vectors)
   }
 

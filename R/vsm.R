@@ -111,14 +111,21 @@ with(vsm, {
     return(T)
   }
 
-  get_vector <- function(term, modelname) {
+  get_vector <- function(term, modelname, .as_column = F) {
     model <- .models_loaded[[modelname]]
     mterm <- model$transform(term)
     idx <- which(model$vocab == mterm)
     if(length(idx) > 0){
-      return(model$M[idx,])
+      v <- model$M[idx,]
+      if(.as_column){
+        v <- matrix(ncol = 1, data = v, byrow = T)
+      }
+      return(v)
     }
-    return(matrix(NA, nrow=ncol(M))) # create a NA valued matrix with one vector and the dim of M)
+    if(.as_column){
+      return(matrix(NA, ncol=1, nrow=ncol(M)))
+    }
+    return(matrix(NA, nrow=1, ncol=ncol(M))) # create a NA valued matrix with one vector and the dim of M)
   }
 
 })

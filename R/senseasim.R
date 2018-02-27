@@ -30,11 +30,10 @@ with(senseasim, {
 
     # if SIM is not a matrix because M1 matrix was merely a vector, correct it manually!
     if(!is.matrix(SIM)) {
-      SIM <- matrix(SIM, nrow=dim(M1)[2], ncol=dim(M2)[2])
+      SIM <- matrix(SIM, nrow=dim(M1)[2], ncol=dim(M2)[2], byrow = F)
       rownames(SIM) <- colnames(M1)
       colnames(SIM) <- colnames(M2)
     }
-
     return(SIM)
   }
 
