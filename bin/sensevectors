@@ -13,7 +13,8 @@ parser$add_argument('-i', '--input', nargs=1, type='character', default='-', hel
 parser$add_argument('-o', '--output', nargs=1, type='character', default='-', help='Output file location [specify - for stdout, default %(default)s]', metavar='filename')
 parser$add_argument('-m', '--vsmodel', type='character', help='VSM model', metavar='modelname')
 parser$add_argument('-s', '--sensemodel', type='character', help='JoBimText sense model', metavar='modelname')
-parser$add_argument('-t', '--topn', type='integer', nargs=1,default=3, help='Use top n sense terms [default %(default)s]', metavar='number')
+parser$add_argument('-t', '--topn', type='integer', nargs=1, default=5, help='Use top n sense terms [default %(default)s]', metavar='number')
+parser$add_argument('-l', '--lamda', type='double', nargs=1, default=0.5, help='Shift the sense vectors by lambda into the direction of its base vector [default %(default)s]', metavar='number')
 parser$add_argument('--models', action='store_true', default='FALSE', help='Get more details of default models.')
 
 # get command line options, if help option encountered print help and exit,
@@ -33,7 +34,6 @@ if(args$run) {
 
   library(senseasim)
 
-  args <- parser$parse_args(cliargs)
   inputfile <- NULL
   if(args$models){
     # generate help string
@@ -56,6 +56,9 @@ if(args$run) {
   }
   if(args$topn != sensevectors$.defaults$topn_sense_terms){
     sensevectors$.defaults$topn_sense_terms <- args$topn
+  }
+  if(args$lambda != sensevectors$.defaults$shift_lambda){
+    sensevectors$.defaults$shift_lambda <- args$shift_lambda
   }
   if(args$parallel == 1) {
     sensevectors$run(inputfile = inputfile, outputfile = outputfile)
