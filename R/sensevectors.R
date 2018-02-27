@@ -9,25 +9,8 @@ with(sensevectors, {
     topn_sense_terms = 5
   )
 
-  init <- function(init_dependencies = F) {
-    if(init_dependencies){
-      vsm$load_default_matrices(c(.defaults$vsm_model))
-    }
-  }
-
-  init_cluster <- function(cl, inputfile, outputfile) {
-    sensevectors$init(init_dependencies = F)
-
-    words <<- rio::import(inputfile, sep=' ', fill=T, header=F)
-    parallel::clusterExport(cl, c('words','sensevectors'), envir = .GlobalEnv)
-    parallel::clusterExport(cl, c('outputfile'), envir = environment())
-
-    parallel::clusterEvalQ(cl, {
-      # initialization actions
-      local_outputfile <<- paste0(outputfile, Sys.getpid())
-      sensevectors$init(init_dependencies = T)
-      message(sprintf('[%s-%d-%s] saving to \'%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), local_outputfile))
-    })
+  init <- function() {
+    vsm$load_default_matrices(c(.defaults$vsm_model))
   }
 
   get_sense_vectors <- function(term, POS) {
@@ -84,7 +67,6 @@ with(sensevectors, {
     return(vectors)
   }
 
-
   write_vectors_txt <- function(vectors, f=NULL){
     if(is.null(f)){
       f <- stdout()
@@ -116,7 +98,7 @@ with(sensevectors, {
   }
 
   run <- function(inputfile=NULL, outputfile=NULL){
-    init(init_dependencies = T)
+    init()
     if(is.character(inputfile)) {
       words <- rio::import(inputfile, sep=' ', fill=T, header=F)
       r <- lapply(1:nrow(words), function(i) {
@@ -134,6 +116,19 @@ with(sensevectors, {
         get_and_write_sensevectors(term, POS, outputfile)
       })
     }
+  }
+
+  init_cluster <- function(cl, inputfile, outputfile) {
+    words <<- rio::import(inputfile, sep=' ', fill=T, header=F)
+    parallel::clusterExport(cl, c('words','sensevectors'), envir = .GlobalEnv)
+    parallel::clusterExport(cl, c('outputfile'), envir = environment())
+
+    parallel::clusterEvalQ(cl, {
+      # initialization actions
+      local_outputfile <<- paste0(outputfile, Sys.getpid())
+      sensevectors$init()
+      message(sprintf('[%s-%d-%s] saving to \'%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), local_outputfile))
+    })
   }
 
   run_parallel <- function(inputfile, outputfile, cl = NULL) {

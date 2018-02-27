@@ -17,4 +17,6 @@ Imports:
   jsonlite (>= 1.5),
   rio (>= 0.5.5),
   parallel (>= 3.4.3),
+  plumber (>= 0.4.4),
+  assertthat (>= 0.2.0),
   argparse (>= 1.1.1)

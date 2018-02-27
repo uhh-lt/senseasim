@@ -12,13 +12,10 @@ function(){
 <!DOCTYPE HTML>
 <html>
   <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="1; url=https://goo.gl/forms/7l8OZ9bptiQvBLJ82">
-  <script type="text/javascript">
-  window.location.href = "__swagger__/"
-  </script>
-  <title>Page Redirection</title>
-  </head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="1; url=https://goo.gl/forms/7l8OZ9bptiQvBLJ82">
+    <script type="text/javascript">window.location.href = "__swagger__/"</script>
+    <title>Page Redirection</title>
   <body>If you are not redirected automatically, follow this <a href="__swagger__/">link</a>.
   '
 }
@@ -65,22 +62,6 @@ function(req){
   )
   plumber::forward()
 }
-
-# #* Log some information about the incoming request
-# #* @filter redirect
-# function(req, resp){
-#   if(req$PATH_INFO == '/'){
-#     #req$PATH_INFO = '/__swagger__/'
-#     cat("redirecting '\\' to '\\__swagger__\\'." )
-#   }
-#
-#   plumber::do_forward(pr$endpoints[[1]][[1]], '/')
-# }
-
-#pr <- plumber::plumb("R/webserver.R")
-#pr$run(port=6348, swagger = TRUE)
-#pr$handle("GET", "/", pr$routes$`__swagger__`)
-#pr$run()
 
 
 

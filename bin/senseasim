@@ -1,0 +1,35 @@
+#!/usr/bin/env Rscript --vanilla --default-packages=methods,utils
+
+cliargs = commandArgs(trailingOnly=TRUE)
+
+# create parser object
+parser <- argparse::ArgumentParser(description='Get sensevectors.')
+
+# specify desired options by default ArgumentParser will add an help option
+parser$add_argument('--install', action='store_true', default='FALSE', help='Install sensasim R package.')
+parser$add_argument('--webserver', action='store_true', default='FALSE', help='Run the senseasim webserver.')
+parser$add_argument('-p', '--port', nargs=1, type='integer', default=6348, help='Port number [default %(default)s]', metavar='number')
+
+# get command line options, if help option encountered print help and exit,
+# otherwise if options not found on command line then set defaults,
+
+args <- parser$parse_args(cliargs)
+
+if (args$install) {
+  if(!('devtools' %in% installed.packages()[,'Package'])){
+    stop('Please install R package \'devtools\' (R> install.packages("devtools")). ', call. = F)
+  }
+  devtools::install_github('uhh-lt/senseasim')
+}
+
+# run only if specifically specified
+if(args$webserver) {
+
+  library(senseasim)
+  pr <- plumber::plumb('R/webserver.R')
+  pr$run(port=args$port, swagger = TRUE)
+  pr$run()
+
+}else{
+  message(sprintf('[%s-%d-%s] not running script. Specify \'--webserver\' parameter if you want to run the webserver.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S')))
+}
