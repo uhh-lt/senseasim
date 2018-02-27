@@ -6,21 +6,22 @@ with(sensevectors, {
   .defaults <- list(
     jbt_sense_api = 'stanfordnew_fine',
     vsm_model = 'EN_100k_lsa',
-    topn_sense_terms = 5
+    topn_sense_terms = 5,
+    lambda = .5
   )
 
   init <- function() {
     vsm$load_default_matrices(c(.defaults$vsm_model))
   }
 
-  get_sense_vectors <- function(term, POS) {
-    jb_sense_lists <- Filter(function(l) length(l) > 0, jbt$get_JBT_senses(term, POS, isas = F,  model_template = jbt$.sense_models[[.defaults$jbt_sense_api]], modelname = .defaults$jbt_sense_api))
+  get_sense_vectors <- function(term, POS, vsm_modelname = .defaults$vsm_model, jbt_sense_api = .defaults$jbt_sense_api, topn_sense_terms = .defaults$topn_sense_terms, lamdba = .defaults$lambda) {
+    jb_sense_lists <- Filter(function(l) length(l) > 0, jbt$get_JBT_senses(term, POS, isas = F,  model_template = jbt$.sense_models[[jbt_sense_api]], modelname = jbt_sense_api))
     message(sprintf('[%s-%d-%s] found %d non-empty senses for term=\'%s#%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), length(jb_sense_lists), term, POS))
-    vectors <- get_sense_vectors_from_jbtsenseLists(term, POS, jb_sense_lists, .defaults$vsm_model, .defaults$topn_sense_terms)
+    vectors <- get_sense_vectors_from_jbtsenseLists(term, POS, jb_sense_lists, vsm_modelname, topn_sense_terms)
     return(vectors)
   }
 
-  get_sense_vectors_from_jbtsenseLists <- function(term, POS, jb_sense_lists, vsm_modelname, topn_sense_terms = 1000) {
+  get_sense_vectors_from_jbtsenseLists <- function(term, POS, jb_sense_lists, vsm_modelname = .defaults$vsm_model, topn_sense_terms = .defaults$topn_sense_terms) {
     # prepare for column names
     term_ <- paste(term, POS, sep='#')
     if(is.null(jb_sense_lists) | length(jb_sense_lists) < 1){
