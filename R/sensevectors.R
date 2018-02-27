@@ -29,7 +29,7 @@ with(sensevectors, {
       return(vectors)
     }
     colnames_ = c()
-    sense_vectors <- sapply(jb_sense_lists, function(list_of_jb_terms){
+    sense_vectors <- sapply(jb_sense_lists, function(list_of_jb_terms) {
       sense_terms <- list_of_jb_terms[1:min(length(list_of_jb_terms), topn_sense_terms)]
       sense_terms <- sapply(sense_terms, function(x) gsub('\\s+','', x)) # clean terms
       vectors <- get_vectors_from_jbtterms(sense_terms, vsm_modelname)
@@ -38,7 +38,7 @@ with(sensevectors, {
         if(is.null(dim(vectors))) # NULL or only one vector
           vectors
         else
-          colMeans(vectors)
+          colMeans(vectors) # get_vectors_from_jbtterms return row vectors, this is why we take colMeans here, sapply converts them to column vectors
       }
       # remember the column name
 
