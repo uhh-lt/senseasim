@@ -76,7 +76,7 @@ function(spec){
 #* @param POS2
 #* @get /plotsenses
 #* @png
-function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN'){
+function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model){
 
   ## 1: get data
 
@@ -84,11 +84,16 @@ function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN'){
 
   R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1)
   R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2)
+  R1$index$t1 <- T; R1$index$t2 <- F; R2$index$t1 <- F; R2$index$t2 <- T;
+  index <- rbind(R1$index, R2$index)
+  unique_i <- which(!duplicated(index$idx))
 
-  M <- cbind(V, S1, S2)
+  model <- vsm$.models_loaded[[vsm_modelname]]
+  M <- model$M[index$idx[unique_i],]
+  M <- matrix(M, nrow=ncol(model$M), dimnames = list(NULL, index$mterm[unique_i]), byrow = T)
 
   ## 2: run tsne or PCA
-  Mred <- embdf_TSNE(M, ndim = T, normalize_length = T)
+  Mred <- embdf_TSNE(M, ndim = 2, normalize_length = T)
 
   ## 3: plot data
   embdf$class <- r$labels
@@ -136,9 +141,9 @@ embdf_TSNE <- function(M, ndim = 2, normalize_length = T) {
     dims=ndim
   )
   emb <- as.data.frame(tsne$Y)
-  rownames(emb) <- NULL
   if(normalize_length)
     emb <- as.data.frame(t(apply(tsne$Y, 1, function(vec) (vec / sqrt(sum(vec^2)))))) # take only first ndim dimensions and normalize vector length
+  rownames(emb) <- colnames(M)
   return(emb)
 }
 
@@ -149,10 +154,10 @@ embdf_PCA <- function(M, ndim = 2, normalize_length = T) {
     scale. = TRUE
   )
   emb <- as.data.frame(pca$x[,1:ndim])
-  rownames(emb) <- NULL
   if(normalize_length)
     emb <- as.data.frame(t(apply(pca$x[,1:ndim], 1, function(vec) (vec / sqrt(sum(vec^2)))))) # take only first ndim dimensions and normalize vector length
   colnames(emb) <- gsub('PC', 'V',colnames(emb))
+  rownames(emb) <- colnames(M)
   return(emb)
 }
 

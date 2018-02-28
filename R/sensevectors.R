@@ -63,8 +63,8 @@ with(sensevectors, {
     }
 
     # get unique term indices
-    R$unique_mterms <- which(R$index$idx != duplicated(R$index$idx))
-    uniqueindex <- R$index[R$unique_mterms,]
+    R$unique_i <- which(!duplicated(R$index$idx))
+    uniqueindex <- R$index[R$unique_i,]
 
     # if mapped sense inventory is empty we can't return anything
     if(length(uniqueindex) <= 0) {
@@ -82,13 +82,13 @@ with(sensevectors, {
     R$v_shift <- matrix(ncol = 0, nrow = nrow(M))
     for(i in 1:R$nsenses){
       # get the average vector
-      sidx <- which(uniqueindex$sense == i & !uniqueindex$unknown)
-      if(length(sidx) <= 0) {
+      sterms <- unique(R$index$mterm[which(R$index$sense == i & !R$index$unknown)])
+      if(length(sterms) <= 0) {
         R$status[[length(R$status)+1]] <- sprintf('No known sense terms for sense %d of \'%s %s\'. Producing NA vector.', i, term, POS)
         message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
         s <- matrix(NA, ncol=1, nrow=ncol(model$M)) # create a NA valued matrix with one vector and the dim of M
       } else {
-        s <- matrix(ncol=1, rowMeans(M[,sidx,drop=F]), byrow = T)
+        s <- matrix(ncol=1, rowMeans(M[,sterms,drop=F]), byrow = T)
       }
       # now shift
       if(shift_lambda <= 0){
@@ -105,7 +105,7 @@ with(sensevectors, {
           s_shift <- (shift_lambda * v) + ((1-shift_lambda) * s)
         }
       }
-      colnames(s) <- colnames(s_shift) <- paste0(term, '#', paste0(uniqueindex$mterm[sidx], collapse = ','))
+      colnames(s) <- colnames(s_shift) <- paste0(term, '#', paste0(sterms, collapse = ','))
       R$v <- cbind(R$v, s)
       R$v_shift <- cbind(R$v_shift, s_shift)
     }
