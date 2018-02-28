@@ -88,7 +88,7 @@ with(vsm, {
 
   load_matrix <- function(modelname, models) {
     if(modelname %in% names(.models_loaded)){
-      message(sprintf('[%s-%d-%s] model \'%s\' already loaded. \nDo you need to run \'toBigMatrix.R\'?', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), modelname))
+      message(sprintf('[%s-%d-%s] model \'%s\' already loaded.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), modelname))
       return(T)
     }
 
