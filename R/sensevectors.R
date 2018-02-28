@@ -63,7 +63,7 @@ with(sensevectors, {
     }
 
     # get unique term indices
-    R$unique_mterms <- which(R$index$idx == (unique(R$index$idx)))
+    R$unique_mterms <- which(R$index$idx != duplicated(R$index$idx))
     uniqueindex <- R$index[R$unique_mterms,]
 
     # if mapped sense inventory is empty we can't return anything
@@ -82,7 +82,7 @@ with(sensevectors, {
     R$v_shift <- matrix(ncol = 0, nrow = nrow(M))
     for(i in 1:R$nsenses){
       # get the average vector
-      sidx <- which(uniqueindex$sense == i)
+      sidx <- which(uniqueindex$sense == i & !uniqueindex$unknown)
       if(length(sidx) <= 0) {
         R$status[[length(R$status)+1]] <- sprintf('No known sense terms for sense %d of \'%s %s\'. Producing NA vector.', i, term, POS)
         message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
