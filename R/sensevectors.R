@@ -15,79 +15,102 @@ with(sensevectors, {
   }
 
   get_sense_vectors <- function(term, POS, vsm_modelname = .defaults$vsm_model, jbt_sense_api = .defaults$jbt_sense_api, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
-    jb_sense_lists <- jbt$get_JBT_senses(term, POS, isas = F, modelname = jbt_sense_api)
-    message(sprintf('[%s-%d-%s] found %d non-empty senses for term=\'%s#%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), length(jb_sense_lists), term, POS))
-    sense_vectors <- get_sense_vectors_from_jbtsenseLists(term, POS, jb_sense_lists, vsm_modelname, topn_sense_terms)
-    # now shift
-    if(shift_lambda <= 0){
-      # term vector has no influence
-      return(sense_vectors)
-    }
-    # get the term vector
-    term_vector <- vsm$get_vector(term, vsm_modelname) # row vector
-    term_vector_repl <- replicate(ncol(sense_vectors), term_vector) # make replicated column vectors
-    if(shift_lambda >= 1) {
-      # sense vectors will have no influence
-      colnames(term_vector_repl) <- colnames(sense_vectors)
-      return(term_vector_repl)
-    }
-    # otherwise apply the shift
-    sense_vectors_shifted <- (shift_lambda * term_vector_repl) + ((1-shift_lambda) * sense_vectors)
-    colnames(sense_vectors_shifted) <- colnames(sense_vectors)
-    return(sense_vectors_shifted)
-  }
+    # prepare the result object
+    R <- newEmptyObject()
+    R$params <- as.list(match.call())
+    R$status <- list()
 
-  get_sense_vectors_from_jbtsenseLists <- function(term, POS, jb_sense_lists, vsm_modelname = .defaults$vsm_model, topn_sense_terms = .defaults$topn_sense_terms) {
-    # prepare for column names
-    term_ <- paste(term, POS, sep='#')
-    if(is.null(jb_sense_lists) | length(jb_sense_lists) < 1){
-      vectors = matrix(NA, nrow=ncol(vsm$.models_loaded[[vsm_modelname]]$M)) # create a NA valued matrix with one vector and the dim of M)
-      colnames(vectors) <- paste0(term_,' ', '_')
-      return(vectors)
-    }
-    colnames_ = c()
-    sense_vectors <- sapply(jb_sense_lists, function(list_of_jb_terms) {
-      sense_terms <- list_of_jb_terms[1:min(length(list_of_jb_terms), topn_sense_terms)]
-      vectors <- get_vectors_from_jbtterms(sense_terms, vsm_modelname)
-      # the average vector is the sense vector
-      average_vector <- {
-        if(is.null(dim(vectors))) # NULL or only one vector
-          vectors
-        else
-          colMeans(vectors) # vsm returns row vectors, this is why we take colMeans here, sapply converts them to column vectors
-      }
-      # remember the column name
-      colname_ <- paste(term_, paste(sense_terms, collapse=','), collapse=' ')
-      colnames_ <<- c(colnames_, colname_)
-      return(average_vector)
-    })
-    colnames(sense_vectors) <- colnames_
-    return(sense_vectors)
-  }
-
-  get_vectors_from_jbtterms <- function(jbtterms, vsm_modelname, .as_column_vectors = F) {
     model <- vsm$.models_loaded[[vsm_modelname]]
-    # clear POS from result terms
-    terms <- sapply(jbtterms, function(x) gsub('\\s+','', gsub('#.*','',gsub(':.*','',x)))) # clean terms, either isas (':') or senses ('#') and remove whitespaces
-    mterms <- sapply(terms, model$transform) # get the correct term represtentation for the current matrix
-    # select the vectors that are in the vs matrix
-    covered_mterms_indices <- which(model$vocab %in% mterms)
-    # get the submatrix
-    if(length(covered_mterms_indices) <= 0){
-      # if no known term in the sense cluster use the unknown vector???
-      message(sprintf("[%s-%d-%s] sense terms '%s' are unknown.", gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(),format(Sys.time(), "%m%d-%H%M%S"), paste(mterms,collapse = ', ')))
-      if(.as_column_vectors){
-        return(matrix(NA, ncol=1, nrow=ncol(model$M))) # create a NA valued matrix with one vector and the dim of M
+    # prepare backup return values
+    R$v <- matrix(NA, ncol = 1, nrow = ncol(model$M), dimnames = list(NULL, paste0(term,'#')))
+    R$v_shift <- R$v
+
+    # get the jbt sense list
+    jb_sense_lists <- jbt$get_JBT_senses(term, POS, isas = F, modelname = jbt_sense_api)
+    R$termSenseInventory <- jb_sense_lists
+    R$nsenses <- length(jb_sense_lists)
+    R$status[[length(R$status)+1]] <- sprintf('found %d non-empty senses for term=\'%s#%s\'', R$nsenses, term, POS)
+    message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
+
+    # get the sub-matrix which contains the term vectors of all terms within the topn of the sense lists
+    if(is.null(jb_sense_lists) | length(jb_sense_lists) < 1) {
+      # if sense inventory is empty we can't return anything
+      R$status[[length(R$status)+1]] <- 'Sense inventory is empty, skipped further processing.'
+      return(R)
+    }
+
+    # make a proper index as dataframe, where we can e.g. select all entries from sense 2 with R$index[which(R$index$sense == 2),]
+    mterm <- model$transform(term)
+    mterm$original <- term
+    mterm$original_clean <- term
+    mterm$sense <- 0
+    mterm$unknown <- mterm$idx == model$unk$idx
+    R$index <- data.frame(mterm, stringsAsFactors = F)
+
+    for(i in 1:R$nsenses) {
+      list_of_jb_terms <- jb_sense_lists[[i]]
+      sense_terms <- list_of_jb_terms[1:min(length(list_of_jb_terms), topn_sense_terms)]
+      # get the correct term representation for the current matrix
+      for(sense_term in sense_terms) {
+        sense_term_clean <- gsub('\\s+','', gsub('#.*','',gsub(':.*','',sense_term))) # clean terms, either isas (':') or senses ('#'), clear POS and remove whitespaces
+        mterm <- model$transform(sense_term_clean)
+        mterm$original <- sense_term
+        mterm$original_clean <- sense_term_clean
+        mterm$sense <- i
+        mterm$unknown <- mterm$idx == model$unk$idx
+        R$index <- rbind(R$index, data.frame(mterm, stringsAsFactors = F))
       }
-      return(matrix(NA, nrow=1, ncol=ncol(model$M))) # create a NA valued matrix with one vector and the dim of M
     }
-    vectors <- model$M[covered_mterms_indices,]
-    rownames(vectors) <- sense_terms
-    if(.as_column_vectors){
-      vectors <- matrix(vectors, nrow=ncol(model$M), byrow = T)
-      colnames(vectors) <- sense_terms
+
+    # get unique term indices
+    R$unique_mterms <- which(R$index$idx == (unique(R$index$idx)))
+    uniqueindex <- R$index[R$unique_mterms,]
+
+    # if mapped sense inventory is empty we can't return anything
+    if(length(uniqueindex) <= 0) {
+      R$status[[length(R$status)+1]] <- sprintf('No known sense terms for \'%s %s\'. Skip processing.', term, POS)
+      message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
+      return(R)
     }
-    return(vectors)
+
+    # get the submatrix (note: M contains row vectors)
+    M <- model$M[uniqueindex$idx,]
+    M <- matrix(M, nrow=ncol(model$M), dimnames = list(NULL, uniqueindex$mterm), byrow = T)
+
+    # get the submatrices for each sense and produce the sense vectors
+    R$v <- matrix(ncol = 0, nrow = nrow(M))
+    R$v_shift <- matrix(ncol = 0, nrow = nrow(M))
+    for(i in 1:R$nsenses){
+      # get the average vector
+      sidx <- which(uniqueindex$sense == i)
+      if(length(sidx) <= 0) {
+        R$status[[length(R$status)+1]] <- sprintf('No known sense terms for sense %d of \'%s %s\'. Producing NA vector.', i, term, POS)
+        message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
+        s <- matrix(NA, ncol=1, nrow=ncol(model$M)) # create a NA valued matrix with one vector and the dim of M
+      } else {
+        s <- matrix(ncol=1, rowMeans(M[,sidx,drop=F]), byrow = T)
+      }
+      # now shift
+      if(shift_lambda <= 0){
+        # term vector has no influence
+        s_shift <- s
+      }else{
+        # get the term vector
+        v <- M[,1,drop=F]
+        if(shift_lambda >= 1) {
+          # sense vector has no influence, replicate v
+          s_shift <- v
+        }else{
+          # otherwise apply the shift
+          s_shift <- (shift_lambda * v) + ((1-shift_lambda) * s)
+        }
+      }
+      colnames(s) <- colnames(s_shift) <- paste0(term, '#', paste0(uniqueindex$mterm[sidx], collapse = ','))
+      R$v <- cbind(R$v, s)
+      R$v_shift <- cbind(R$v_shift, s_shift)
+    }
+
+    return(R)
   }
 
   write_vectors_txt <- function(vectors, f=NULL){
@@ -105,7 +128,7 @@ with(sensevectors, {
   }
 
   get_and_write_sensevectors <- function(term, POS, fout) {
-    vectors <- get_sense_vectors(term, POS)
+    vectors <- get_sense_vectors(term, POS)$v_shift
     write_vectors_txt(vectors, fout)
   }
 

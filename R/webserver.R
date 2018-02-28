@@ -28,6 +28,29 @@ function(msg=""){
   list(msg = paste0("The message is: '", msg, "'"))
 }
 
+#* Get sense vectors
+#* @param term The term (default: vitamin)
+#* @param POS The part of speech of the term (default: NN)
+#* @param RET which information to return (default: index)
+#* @get /sensevector
+function(res, term='vitamin', POS='NN', RET='index'){
+  # @ serializer contentType list(type="application/json")
+  # json <- jsonlite::toJSON(list(
+  #   index <- vec$index,
+  #   vector <- t(vec$v)
+  # ))
+  # res$body <- json
+  sensevectors$init()
+  vec <- sensevectors$get_sense_vectors(term, POS)
+  message('index')
+  switch (RET,
+    'status' = vec$status,
+    'vector' = vec$v,
+    'vectorshift' = vec$v_shift,
+    vec$index
+  )
+}
+
 #* Plot out data from the iris dataset (EXAMPLE FUNCTION)
 #* @param spec If provided, filter the data to only this species (e.g. 'setosa')
 #* @get /plot
@@ -55,52 +78,84 @@ function(spec){
 #* @png
 function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN'){
 
+  ## 1: get data
+
   indices <- list()
 
-  v1 <- vsm$get_vector(term = term1, modelname = sensevectors$.defaults$vsm_model, .as_column = T); colnames(v1) <- c(term1)
-  v2 <- vsm$get_vector(term = term2, modelname = sensevectors$.defaults$vsm_model, .as_column = T); colnames(v2) <- c(term2)
-
-  V <- cbind(v1,v2)
-  indices[[term1]] <- c(1)
-  indices[[term2]] <- c(2)
-  n <- 2
-
-  jb_sense_lists1 <- jbt$get_JBT_senses(term1, POS1, isas = F, modelname = sensevectors$.defaults$jbt_sense_api)
-  jb_sense_lists2 <- jbt$get_JBT_senses(term2, POS2, isas = F, modelname = sensevectors$.defaults$jbt_sense_api)
-
-  for(i in 1:length(jb_sense_lists1)){
-    list_of_jb_terms <- jb_sense_lists1[[i]]
-    sense_terms <- list_of_jb_terms[1:min(length(list_of_jb_terms), sensevectors$.defaults$topn_sense_terms)]
-    vectors <- sensevectors$get_vectors_from_jbtterms(sense_terms, sensevectors$.defaults$vsm_model, .as_column_vectors = T)
-    V <- cbind(V, vectors)
-    indices[[paste0('senseterms_sense__', i, '__', term1)]] <- seq(1:ncol(vectors)) + n
-    n <- ncol(vectors) + n
-  }
-
-  for(i in 1:length(jb_sense_lists2)){
-    list_of_jb_terms <- jb_sense_lists2[[i]]
-    sense_terms <- list_of_jb_terms[1:min(length(list_of_jb_terms), sensevectors$.defaults$topn_sense_terms)]
-    vectors <- sensevectors$get_vectors_from_jbtterms(sense_terms, sensevectors$.defaults$vsm_model, .as_column_vectors = T)
-    V <- cbind(V, vectors)
-    indices[[paste0('senseterms_sense__', i, '__', term2)]] <- seq(1:ncol(vectors)) + n
-    n <- ncol(vectors) + n
-  }
-
-  S1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1, vsm_modelname = sensevectors$.defaults$vsm_model)
-  indices[[paste0('sensevectors__', term1)]] <- seq(1:ncol(S1)) + n
-  n <- ncol(S1) + n
-
-  S2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2, vsm_modelname = sensevectors$.defaults$vsm_model)
-  indices[[paste0('sensevectors__', term2)]] <- seq(1:ncol(S2)) + n
-  n <- ncol(S2) + n
+  R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1)
+  R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2)
 
   M <- cbind(V, S1, S2)
 
-  ## TODO:
-  ## 1: run tsne or PCA
-  ## 2: plot data
+  ## 2: run tsne or PCA
+  Mred <- embdf_TSNE(M, ndim = T, normalize_length = T)
+
+  ## 3: plot data
+  embdf$class <- r$labels
+  embdf[names(r$labels1), r$term1] <- as.character(r$labels1)
+  embdf[names(r$labels2), r$term2] <- as.character(r$labels2)
+  p1 <- ggplot(embdf, aes(x=V1, y=V2, label=rownames(embdf))) +
+    geom_label(aes_string(fill = r$term1), colour = "white") +
+    guides(colour = guide_legend(override.aes = list(size=6))) +
+    xlab("") + ylab("") +
+    theme_light(base_size=20) +
+    theme(
+      strip.background = element_blank(),
+      strip.text.x     = element_blank(),
+      axis.ticks       = element_blank(),
+      axis.line        = element_blank(),
+      panel.border     = element_blank()
+    )
+
+  p2 <- ggplot(embdf, aes(x=V1, y=V2, label=rownames(embdf))) +
+    geom_label(aes_string(fill = r$term2), colour = "white") +
+    guides(colour = guide_legend(override.aes = list(size=6))) +
+    xlab("") + ylab("") +
+    theme_light(base_size=20) +
+    theme(
+      strip.background = element_blank(),
+      strip.text.x     = element_blank(),
+      axis.ticks       = element_blank(),
+      axis.line        = element_blank(),
+      panel.border     = element_blank()
+    )
+
+  p <- multiplot(p1,p2,cols = 2)
+
 
 }
+
+
+embdf_TSNE <- function(M, ndim = 2, normalize_length = T) {
+  tsne <- Rtsne::Rtsne(
+    t(M),
+    check_duplicates = FALSE,
+    pca = TRUE,
+    perplexity=5,
+    theta=0.5,
+    dims=ndim
+  )
+  emb <- as.data.frame(tsne$Y)
+  rownames(emb) <- NULL
+  if(normalize_length)
+    emb <- as.data.frame(t(apply(tsne$Y, 1, function(vec) (vec / sqrt(sum(vec^2)))))) # take only first ndim dimensions and normalize vector length
+  return(emb)
+}
+
+embdf_PCA <- function(M, ndim = 2, normalize_length = T) {
+  pca <- prcomp(
+    t(M),
+    center = TRUE,
+    scale. = TRUE
+  )
+  emb <- as.data.frame(pca$x[,1:ndim])
+  rownames(emb) <- NULL
+  if(normalize_length)
+    emb <- as.data.frame(t(apply(pca$x[,1:ndim], 1, function(vec) (vec / sqrt(sum(vec^2)))))) # take only first ndim dimensions and normalize vector length
+  colnames(emb) <- gsub('PC', 'V',colnames(emb))
+  return(emb)
+}
+
 
 #* Log some information about the incoming request
 #* @filter logger
