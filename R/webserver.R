@@ -28,6 +28,17 @@ function(msg=""){
   list(msg = paste0("The message is: '", msg, "'"))
 }
 
+#* Get vector
+#* @param term The term (default: vitamin)
+#* @param model The vector space model to use
+#* @serializer contentType list(type="text/plain")
+#* @get /vector
+function(res, term='vitamin', model=sensevectors$.defaults$vsm_model){
+  vsm$load_default_matrices(list(model))
+  vec <- vsm$get_vector(term = term, modelname = model, .as_column = F)
+  res$body <- paste(paste0(rownames(vec), collapse = ''), paste0(vec, collapse = ' '))
+}
+
 #* Get sense vectors
 #* @param term The term (default: vitamin)
 #* @param POS The part of speech of the term (default: NN)
