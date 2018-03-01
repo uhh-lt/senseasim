@@ -96,38 +96,82 @@ function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname 
   Mred <- embdf_TSNE(M, ndim = 2, normalize_length = T)
 
   ## 3: plot data
-  embdf$class <- r$labels
-  embdf[names(r$labels1), r$term1] <- as.character(r$labels1)
-  embdf[names(r$labels2), r$term2] <- as.character(r$labels2)
-  p1 <- ggplot(embdf, aes(x=V1, y=V2, label=rownames(embdf))) +
-    geom_label(aes_string(fill = r$term1), colour = "white") +
+  plot_bulls_eye(Mred)
+
+}
+
+plot_bulls_eye <- function(embdf) {
+
+  # clusters and terms (term1 outer term2 inner)
+  embdf_n1 <- as.data.frame(t(apply(embdf[,c('V1','V2')], 1, function(vec) (vec / sqrt(sum(vec^2)))))) * 1.0 # take only first ndim dimensions and normalize vector length
+  embdf_n2 <- embdf_n1[,c('V1','V2')] * 0.8
+
+  embdf_n1 <- embdf_n1[names(r$labels1),]
+  embdf_n1[, r$term1] <- as.character(r$labels1)
+  embdf_n1$rname <- rownames(embdf_n1)
+  embdf_n1t <- embdf_n1[r$term1, ]
+  embdf_n1 <- embdf_n1[-which(rownames(embdf_n1) == r$term1), ]
+
+  embdf_n2 <- embdf_n2[names(r$labels2),]
+  embdf_n2[, r$term2] <- as.character(r$labels2)
+  embdf_n2$rname <- rownames(embdf_n2)
+  embdf_n2t <- embdf_n2[r$term2, ]
+  embdf_n2 <- embdf_n2[-which(rownames(embdf_n2) == r$term2), ]
+
+  # averaged vectors
+  embdf_avg <- embdf
+  embdf_avg[names(r$labels1),'class1'] <- r$labels1
+  embdf_avg[names(r$labels2),'class2'] <- r$labels2
+
+  embdf_avg_1 <- embdf_avg %>% filter(!is.na(class1)) %>% group_by(class1) %>% summarise(V1=mean(V1), V2=mean(V2))
+  embdf_avg_2 <- embdf_avg %>% filter(!is.na(class2)) %>% group_by(class2) %>% summarise(V1=mean(V1), V2=mean(V2))
+
+  embdf_navg_1 <- as.data.frame(t(apply(embdf_avg_1[,c('V1','V2')], 1, function(vec) (vec / sqrt(sum(vec^2)))))) * 0.6
+  embdf_navg_1s <- as.data.frame(t(apply(embdf_avg_1[,c('V1','V2')], 1, function(vec) ( vec + unlist(embdf[r$term1, c('V1','V2')])) / 2 ))) # shifted average
+  embdf_navg_1s <- as.data.frame(t(apply(embdf_navg_1s[,c('V1','V2')], 1, function(vec) (vec / sqrt(sum(vec^2)))))) * 0.6
+  embdf_navg_1[,'rname'] <- as.factor(sub('0', '', paste0(r$term1, embdf_avg_1$class1)))
+  embdf_navg_1[,'class'] <-  as.factor(embdf_avg_1$class1)
+  embdf_navg_1s <- cbind(embdf_navg_1s, embdf_navg_1[,c('rname','class')])
+
+  embdf_navg_2 <- as.data.frame(t(apply(embdf_avg_2[,c('V1','V2')], 1, function(vec) (vec / sqrt(sum(vec^2)))))) * 0.6
+  embdf_navg_2s <- as.data.frame(t(apply(embdf_navg_2[,c('V1','V2')], 1, function(vec) ( vec + unlist(embdf[r$term2, c('V1','V2')])) / 2 )))
+  embdf_navg_2s <- as.data.frame(t(apply(embdf_navg_2s[,c('V1','V2')], 1, function(vec) (vec / sqrt(sum(vec^2)))))) * 0.6
+  embdf_navg_2[,'rname'] <- as.factor(sub('0', '', paste0(r$term2, embdf_avg_2$class2)))
+  embdf_navg_2[,'class'] <- as.factor(embdf_avg_2$class2)
+  embdf_navg_2s <- cbind(embdf_navg_2s, embdf_navg_2[,c('rname','class')])
+
+  circles <- get_circles(dia = c(1.2, 1.6, 2))
+
+  p <- ggplot() +
+    geom_path (data = circles, aes(x = x, y = y, group = lev), colour = 'gray') +
+    geom_label(data = embdf_n1, aes_string(x='V1', y='V2', label='rname',fill = r$term1), colour = "black") +
+    geom_label(data = embdf_n2, aes_string(x='V1', y='V2', label='rname',fill = r$term2), colour = "white") +
+    geom_label_repel(data = embdf_navg_1, aes_string(x='V1', y='V2', label='rname',fill = 'class'), color = 'black') +
+    geom_label_repel(data = embdf_navg_2, aes_string(x='V1', y='V2', label='rname', fill = 'class'), color = 'white') +
+    geom_segment(data = embdf_navg_1, aes_string(x='0', y='0', xend='V1', yend='V2', color='class'), arrow = arrow(length = unit(0.01, 'npc'))) +
+    geom_segment(data = embdf_navg_2, aes_string(x='0', y='0', xend='V1', yend='V2', color='class'),linetype='dashed', arrow = arrow(length = unit(0.01, 'npc'))) +
+    geom_hline(yintercept=0, linetype='dashed', color = 'gray') +
+    geom_vline(xintercept=0, linetype='dashed', color = 'gray') +
+    geom_text(data = embdf_n1t, aes_string(x=0, y=-1, label = 'rname'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') +
+    geom_text(data = embdf_n2t, aes_string(x=0, y=-0.8, label = 'rname'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') +
     guides(colour = guide_legend(override.aes = list(size=6))) +
     xlab("") + ylab("") +
     theme_light(base_size=20) +
+    # theme_classic(base_size=20) +
     theme(
       strip.background = element_blank(),
       strip.text.x     = element_blank(),
+      axis.text.x      = element_blank(),
+      axis.text.y      = element_blank(),
       axis.ticks       = element_blank(),
       axis.line        = element_blank(),
-      panel.border     = element_blank()
+      panel.border     = element_blank(),
+      legend.position  = 'none'
     )
+  p
 
-  p2 <- ggplot(embdf, aes(x=V1, y=V2, label=rownames(embdf))) +
-    geom_label(aes_string(fill = r$term2), colour = "white") +
-    guides(colour = guide_legend(override.aes = list(size=6))) +
-    xlab("") + ylab("") +
-    theme_light(base_size=20) +
-    theme(
-      strip.background = element_blank(),
-      strip.text.x     = element_blank(),
-      axis.ticks       = element_blank(),
-      axis.line        = element_blank(),
-      panel.border     = element_blank()
-    )
-
-  p <- multiplot(p1,p2,cols = 2)
-
-
+  #ggsave('~/git/senseasim/bullseye.pdf', p, width=20, height=20, units='cm')
+  return(p)
 }
 
 
