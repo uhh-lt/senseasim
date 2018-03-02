@@ -101,9 +101,10 @@ function(res, term='vitamin', POS='NN', RET='index', vsm_modelname = sensevector
 #* @param jbt_sense_api The jbt api to use
 #* @param topn_sense_terms
 #* @param shift_lambda
+#* @param reduction tsne or pca, default: tsne
 #* @get /plotsenses
 #* @png
-function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda){
+function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda, reduction='tsne'){
 
   vsm$load_default_matrices(list(vsm_modelname))
 
@@ -115,7 +116,7 @@ function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname 
   }
 
   #: get the plot
-  p <- vis$plotsenses(term1, term2, POS1, POS2, vsm_modelname, jbt_sense_api, topn_sense_terms, shift_lambda)
+  p <- vis$plotsenses(term1, term2, POS1, POS2, vsm_modelname, jbt_sense_api, topn_sense_terms, shift_lambda, reduction)
 
   #: return the plot
   p

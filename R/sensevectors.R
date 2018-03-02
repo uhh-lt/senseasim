@@ -32,13 +32,6 @@ with(sensevectors, {
     R$status[[length(R$status)+1]] <- sprintf('found %d non-empty senses for term=\'%s#%s\'', R$nsenses, term, POS)
     message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
 
-    # get the sub-matrix which contains the term vectors of all terms within the topn of the sense lists
-    if(is.null(jb_sense_lists) | length(jb_sense_lists) < 1) {
-      # if sense inventory is empty we can't return anything
-      R$status[[length(R$status)+1]] <- 'Sense inventory is empty, skipped further processing.'
-      return(R)
-    }
-
     # make a proper index as dataframe, where we can e.g. select all entries from sense 2 with R$index[which(R$index$sense == 2),]
     mterm <- model$transform(term)
     mterm$original <- term
@@ -47,7 +40,14 @@ with(sensevectors, {
     mterm$unknown <- mterm$idx == model$unk$idx
     R$index <- data.frame(mterm, stringsAsFactors = F)
 
-    for(i in 1:R$nsenses) {
+    # get the sub-matrix which contains the term vectors of all terms within the topn of the sense lists
+    if(is.null(jb_sense_lists) | length(jb_sense_lists) < 1) {
+      # if sense inventory is empty make a warning
+      R$status[[length(R$status)+1]] <- 'Attention: sense inventory is empty.'
+      message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
+    }
+
+    for(i in seq_along(jb_sense_lists)) {
       list_of_jb_terms <- jb_sense_lists[[i]]
       sense_terms <- list_of_jb_terms[1:min(length(list_of_jb_terms), topn_sense_terms)]
       # get the correct term representation for the current matrix
@@ -65,6 +65,7 @@ with(sensevectors, {
     # get unique term indices
     R$unique_i <- which(!duplicated(R$index$idx))
     uniqueindex <- R$index[R$unique_i,]
+    uniqueindex <- uniqueindex[!uniqueindex$unknown,]
 
     # if mapped sense inventory is empty we can't return anything
     if(length(uniqueindex) <= 0) {
@@ -80,7 +81,7 @@ with(sensevectors, {
     # get the submatrices for each sense and produce the sense vectors
     R$v <- matrix(ncol = 0, nrow = nrow(M))
     R$v_shift <- matrix(ncol = 0, nrow = nrow(M))
-    for(i in 1:R$nsenses){
+    for(i in seq_len(R$nsenses)){
       # get the average vector
       sterms <- unique(R$index$mterm[which(R$index$sense == i & !R$index$unknown)])
       if(length(sterms) <= 0) {

@@ -8,7 +8,7 @@ vis <- new.env(parent = .GlobalEnv)
 
 with(vis, {
 
-  plotsenses <- function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda){
+  plotsenses <- function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda, reduction = 'tsne'){
 
     ## 1: get data
     R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1, vsm_modelname = vsm_modelname, jbt_sense_api = jbt_sense_api, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
@@ -22,19 +22,25 @@ with(vis, {
     # make column vectors
     M <- matrix(M, nrow=ncol(model$M), dimnames = list(NULL, index$mterm[unique_i]), byrow = T)
     # add sense vectors (shifted + non_shifted), replace colnames by stg like 'iron#1s'
-    colnames(R1$v) <- paste0(term1,'#',1:ncol(R1$v))
-    colnames(R2$v) <- paste0(term2,'#',1:ncol(R1$v))
-    colnames(R1$v_shift) <- paste0(term1,'#',1:ncol(R1$v_shift),'s')
-    colnames(R2$v_shift) <- paste0(term2,'#',1:ncol(R2$v_shift),'s')
+    if(R1$nsenses > 0){
+      colnames(R1$v) <- paste0(term1,'#',seq_len(ncol(R1$v)))
+      colnames(R1$v_shift) <- paste0(term1,'#',seq_len(ncol(R1$v_shift)),'s')
+    }
+    if(R2$nsenses > 0){
+      colnames(R2$v) <- paste0(term2,'#',seq_len(ncol(R2$v)))
+      colnames(R2$v_shift) <- paste0(term2,'#',seq_len(ncol(R2$v_shift)),'s')
+    }
     M <- cbind(M, R1$v, R1$v_shift, R2$v, R2$v_shift)
 
     # add description of sense vectors to index
     temp_index <- index[0,] # copy index definition
-    temp_index[1:(2*(R1$nsenses+R2$nsenses)),'mterm'] <- c(colnames(R1$v), colnames(R1$v_shift), colnames(R2$v), colnames(R2$v_shift))
-    temp_index$t1 <- c(rep(T, R1$nsenses*2), rep(F, R2$nsenses*2))
-    temp_index$t2 <- !temp_index$t1
-    temp_index$sense <- c(1:R1$nsenses, 1:R1$nsenses, 1:R2$nsenses, 1:R2$nsenses)
-    temp_index$is_shifted <- c(rep(F, R1$nsenses), rep(T, R1$nsenses), rep(F, R2$nsenses), rep(T, R2$nsenses))
+    if((R1$nsenses+R2$nsenses) > 0){
+      temp_index[1:(2*(R1$nsenses+R2$nsenses)),'mterm'] <- c(colnames(R1$v), colnames(R1$v_shift), colnames(R2$v), colnames(R2$v_shift))
+      temp_index$t1 <- c(rep(T, R1$nsenses*2), rep(F, R2$nsenses*2))
+      temp_index$t2 <- !temp_index$t1
+      temp_index$sense <- c(seq_len(R1$nsenses), seq_len(R1$nsenses), seq_len(R2$nsenses), seq_len(R2$nsenses))
+      temp_index$is_shifted <- c(rep(F, R1$nsenses), rep(T, R1$nsenses), rep(F, R2$nsenses), rep(T, R2$nsenses))
+    }
     index$is_shifted <- NA
     index <- rbind(index, temp_index)
 
@@ -45,12 +51,16 @@ with(vis, {
     ## 2: run tsne or PCA
     set.seed(1)
     num_rows_sample <- 15000
-    Mdf <- embdf_TSNE(M, ndim = 2, normalize_length = T)
+    Mdf <- switch (reduction,
+      pca = embdf_PCA(M, ndim = 2, normalize_length = T),
+      embdf_TSNE(M, ndim = 2, normalize_length = T)
+    )
+
     index[,c('x','y')] <- Mdf[index$mterm,]
 
     ## 3: plot data
     p <- plot_bulls_eye(index)
-    print(p)
+    return(p)
   }
 
   plot_bulls_eye <- function(index) {
@@ -75,7 +85,7 @@ with(vis, {
 
     p <- ggplot2::ggplot() +
       ggplot2::geom_path (data = circles, ggplot2::aes(x = x, y = y, group = lev), colour = 'gray') + # circles
-      ggplot2::geom_label(data = index[index$sense > 0 & !index$is_sense_vector,], ggplot2::aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # terms t1 & t2
+      ggplot2::geom_label(data = index[index$sense > 0 & !index$is_sense_vector & !index$unknown,], ggplot2::aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # terms t1 & t2
       ggrepel::geom_label_repel(data = index[(index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], ggplot2::aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # t1 sense vectors + original t1 vector
       ggplot2::scale_color_identity() +
       ggplot2::geom_segment(data = index[index$t1 & (index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], ggplot2::aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = ggplot2::arrow(length = ggplot2::unit(0.01, 'npc'))) + # arrows t1
