@@ -1,5 +1,6 @@
 
 library(ggplot2)
+library(ggrepel)
 library(dplyr)
 #'
 #' R Webserver wrapper
@@ -92,6 +93,8 @@ function(spec){
 #* @png
 function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model){
 
+  vsm$load_default_matrices(list(vsm_modelname))
+
   ## 1: get data
   R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1)
   R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2)
@@ -131,8 +134,8 @@ function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname 
   index[,c('x','y')] <- Mdf[index$mterm,]
 
   ## 3: plot data
-  plot_bulls_eye(index)
-
+  p <- plot_bulls_eye(index)
+  print(p)
 }
 
 plot_bulls_eye <- function(index) {
@@ -145,28 +148,30 @@ plot_bulls_eye <- function(index) {
   index$scale[is.na(index$scale)] <- 1.0
   index[, c('x','y')] <- index[,c('x','y')] * index$scale
 
-  # prepare colo labels for different senses
+  # prepare color labels for different senses
   index$usense <- index$sense + 1
-  index$usense[index$t2] <- (index$usense[index$t2] + R1$nsenses + 1)
+  index$usense[index$t2] <- (index$usense[index$t2] + max(index$sense[index$t1]) + 1)
+  index$usense <- sapply(index$usense, toString)
+  index$fontcolor <- 'black'
+  index$fontcolor[index$t2] <- 'white'
 
   circles <- get_circles(dia = c(1.2, 1.6, 2))
 
   p <- ggplot() +
     geom_path (data = circles, aes(x = x, y = y, group = lev), colour = 'gray') + # circles
-    geom_label(data = index[index$t1 & index$sense > 0 & !index$is_sense_vector,], aes_string(x='x', y='y', label='mterm', fill = 'usense'), colour = 'black') + # t1 terms
-    geom_label(data = index[index$t2 & index$sense > 0 & !index$is_sense_vector,], aes_string(x='x', y='y', label='mterm', fill = 'usense'), colour = 'white') + # t2 terms
-    geom_label_repel(data = index[index$t1 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='x', y='y', label='mterm', fill = 'usense'), color = 'black') + # t1 sense vectors + original t1 vector
-    geom_label_repel(data = index[index$t2 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='x', y='y', label='mterm', fill = 'usense'), color = 'white') + # t2 sense vectors + original t1 vector
-    geom_segment(data = index[index$t1 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='0', y='0', xend='x', yend='y', color='usense'), arrow = arrow(length = unit(0.01, 'npc'))) + # arrows t1
-    geom_segment(data = index[index$t2 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='0', y='0', xend='x', yend='y', color='usense'), arrow = arrow(length = unit(0.01, 'npc')), linetype='dashed') + # arrows t2
+    geom_label(data = index[index$sense > 0 & !index$is_sense_vector,], aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # terms t1 & t2
+    geom_label_repel(data = index[(index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # t1 sense vectors + original t1 vector
+    scale_color_identity() +
+    geom_segment(data = index[index$t1 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = arrow(length = unit(0.01, 'npc'))) + # arrows t1
+    geom_segment(data = index[index$t2 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = arrow(length = unit(0.01, 'npc')), linetype='dashed') + # arrows t2
     geom_hline(yintercept=0, linetype='dashed', color = 'gray') + # add a horizontal line
     geom_vline(xintercept=0, linetype='dashed', color = 'gray') + # add a vertical line
     geom_text(data = index[index$t1 & index$sense == 0,], aes_string(x=0, y=-1, label = 'mterm'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') + # add term 1 on the outer circle
     geom_text(data = index[index$t2 & index$sense == 0,], aes_string(x=0, y=-0.8, label = 'mterm'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') + # add term 2 on the inner circle
     guides(colour = guide_legend(override.aes = list(size=8))) +
     xlab("") + ylab("") +
-    theme_light(base_size=20) +
-    # theme_classic(base_size=20) +
+    # theme_light(base_size=20) +
+    theme_classic(base_size=20) +
     theme(
       strip.background = element_blank(),
       strip.text.x     = element_blank(),
@@ -174,12 +179,11 @@ plot_bulls_eye <- function(index) {
       axis.text.y      = element_blank(),
       axis.ticks       = element_blank(),
       axis.line        = element_blank(),
-      panel.border     = element_blank()
-      #legend.position  = 'none'
+      panel.border     = element_blank(),
+      legend.position  = 'none'
     )
-  p
 
-  #ggsave('~/git/senseasim/bullseye.pdf', p, width=20, height=20, units='cm')
+  #ggsave('bullseye.pdf', p, width=20, height=20, units='cm')
   return(p)
 }
 
