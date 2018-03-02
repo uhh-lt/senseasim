@@ -10,7 +10,8 @@ RUN set -ex \
       && sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
       && dpkg-reconfigure --frontend=noninteractive locales \
       && update-locale LANG=en_US.UTF-8 \
-      && apt-get clean
+      && apt-get clean \
+      && rm -rf /var/lib/apt/lists/*
 
 ENV LANG en_US.UTF-8
 
@@ -22,8 +23,9 @@ WORKDIR /opt/project
 
 RUN set -ex \
       && Rscript -e 'install.packages("devtools")' \
-      && Rscript -e 'devtools::install(".")'
+      && Rscript -e 'devtools::install(".")' \
+      && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
 EXPOSE 6348
 
-# re-use r-base's entrypoint
+# re-use r-base's entrypoint which is CMD ["R"]

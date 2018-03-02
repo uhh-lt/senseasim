@@ -7,9 +7,10 @@ services:
 
   webserver:
     image: "senseasim:0.0.1"
-    #restart: unless-stopped
-    stdin_open: true
-    tty: true
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       - DATA_HOME=/opt/project/data
       - DATA_TEMP=/opt/project/data/temp
@@ -18,5 +19,35 @@ services:
       - /Users/rem/data:/opt/project/data
     ports:
       - "6348:6348"
+    entrypoint: Rscript --vanilla --default-packages=methods,utils /opt/project/bin/senseasim --webserver
+
+  bash:
+    image: "senseasim:0.0.1"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    stdin_open: true
+    tty: true
+    environment:
+      - DATA_HOME=/opt/project/data
+      - DATA_TEMP=/opt/project/data/temp
+    volumes:
+      - ${PWD}/data:/opt/project/data
+    ports:
+      - "6348:6348"
     entrypoint: bash
 
+  rsession:
+    image: "senseasim:0.0.1"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    stdin_open: true
+    tty: true
+    environment:
+      - DATA_HOME=/opt/project/data
+      - DATA_TEMP=/opt/project/data/temp
+    volumes:
+      - ${PWD}/data:/opt/project/data
+    ports:
+      - "6348:6348"

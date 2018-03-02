@@ -20,7 +20,6 @@ function(){
   '
 }
 
-
 #* Echo the parameter that was sent in
 #* @param msg The message to echo back.
 #* @get /echo
@@ -48,15 +47,24 @@ function(res, term='vitamin', model=sensevectors$.defaults$vsm_model){
 #* @param topn_sense_terms
 #* @param shift_lambda
 #* @get /sensevector
-function(res, term='vitamin', POS='NN', RET='index', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda){
+function(res, term='vitamin', POS='NN', RET='index', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms = sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda){
   # @ serializer contentType list(type="application/json")
   # json <- jsonlite::toJSON(list(
   #   index <- vec$index,
   #   vector <- t(vec$v)
   # ))
   # res$body <- json
-  sensevectors$init()
-  vec <- sensevectors$get_sense_vectors(term, POS)
+
+  if(is.character(shift_lambda)){
+    shift_lambda <- as.double(shift_lambda)
+  }
+  if(is.character(topn_sense_terms)){
+    topn_sense_terms <- as.integer(topn_sense_terms)
+  }
+
+  vsm$load_default_matrices(list(vsm_modelname))
+
+  vec <- sensevectors$get_sense_vectors(term, POS, vsm_modelname = vsm_modelname, jbt_sense_api = jbt_sense_api, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
   message('index')
   switch (RET,
     'status' = vec$status,
@@ -97,8 +105,14 @@ function(res, term='vitamin', POS='NN', RET='index', vsm_modelname = sensevector
 #* @png
 function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda){
 
-  shift_lambda <- as.double(shift_lambda)
-  topn_sense_terms <- as.integer(topn_sense_terms)
+  vsm$load_default_matrices(list(vsm_modelname))
+
+  if(is.character(shift_lambda)){
+    shift_lambda <- as.double(shift_lambda)
+  }
+  if(is.character(topn_sense_terms)){
+    topn_sense_terms <- as.integer(topn_sense_terms)
+  }
 
   #: get the plot
   p <- vis$plotsenses(term1, term2, POS1, POS2, vsm_modelname, jbt_sense_api, topn_sense_terms, shift_lambda)
@@ -106,8 +120,6 @@ function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname 
   #: return the plot
   p
 }
-
-
 
 #* Log some information about the incoming request
 #* @filter logger
