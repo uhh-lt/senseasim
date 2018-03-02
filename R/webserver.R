@@ -1,3 +1,6 @@
+
+library(ggplot2)
+library(dplyr)
 #'
 #' R Webserver wrapper
 #'
@@ -90,9 +93,6 @@ function(spec){
 function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model){
 
   ## 1: get data
-
-  indices <- list()
-
   R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1)
   R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2)
   R1$index$t1 <- T; R1$index$t2 <- F; R2$index$t1 <- F; R2$index$t2 <- T;
@@ -101,71 +101,69 @@ function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname 
 
   model <- vsm$.models_loaded[[vsm_modelname]]
   M <- model$M[index$idx[unique_i],]
+  # make column vectors
   M <- matrix(M, nrow=ncol(model$M), dimnames = list(NULL, index$mterm[unique_i]), byrow = T)
+  # add sense vectors (shifted + non_shifted), replace colnames by stg like 'iron#1s'
+  colnames(R1$v) <- paste0(term1,'#',1:ncol(R1$v))
+  colnames(R2$v) <- paste0(term2,'#',1:ncol(R1$v))
+  colnames(R1$v_shift) <- paste0(term1,'#',1:ncol(R1$v_shift),'s')
+  colnames(R2$v_shift) <- paste0(term2,'#',1:ncol(R2$v_shift),'s')
+  M <- cbind(M, R1$v, R1$v_shift, R2$v, R2$v_shift)
+
+  # add description of sense vectors to index
+  temp_index <- index[0,] # copy index definition
+  temp_index[1:(2*(R1$nsenses+R2$nsenses)),'mterm'] <- c(colnames(R1$v), colnames(R1$v_shift), colnames(R2$v), colnames(R2$v_shift))
+  temp_index$t1 <- c(rep(T, R1$nsenses*2), rep(F, R2$nsenses*2))
+  temp_index$t2 <- !temp_index$t1
+  temp_index$sense <- c(1:R1$nsenses, 1:R1$nsenses, 1:R2$nsenses, 1:R2$nsenses)
+  temp_index$is_shifted <- c(rep(F, R1$nsenses), rep(T, R1$nsenses), rep(F, R2$nsenses), rep(T, R2$nsenses))
+  index$is_shifted <- NA
+  index <- rbind(index, temp_index)
+
+  # prepare some more metadata
+  index$is_sense_vector <- is.na(index$idx)
+  index$is_sense_vector <- is.na(index$idx)
 
   ## 2: run tsne or PCA
-  Mred <- embdf_TSNE(M, ndim = 2, normalize_length = T)
+  set.seed(1)
+  num_rows_sample <- 15000
+  Mdf <- embdf_TSNE(M, ndim = 2, normalize_length = T)
+  index[,c('x','y')] <- Mdf[index$mterm,]
 
   ## 3: plot data
-  plot_bulls_eye(Mred)
+  plot_bulls_eye(index)
 
 }
 
-plot_bulls_eye <- function(embdf) {
+plot_bulls_eye <- function(index) {
 
-  # clusters and terms (term1 outer term2 inner)
-  embdf_n1 <- as.data.frame(t(apply(embdf[,c('V1','V2')], 1, function(vec) (vec / sqrt(sum(vec^2)))))) * 1.0 # take only first ndim dimensions and normalize vector length
-  embdf_n2 <- embdf_n1[,c('V1','V2')] * 0.8
+  # get vectors of t1 and t2
+  # (x,y) * 0.8 # scale t2 vectors
+  # (x,y) * 0.6 # scale sense vectors, and term vectors
+  index$scale[index$t2 & index$sense > 0 & !index$is_sense_vector] <- 0.8
+  index$scale[index$sense == 0 | index$is_sense_vector] <- 0.6
+  index$scale[is.na(index$scale)] <- 1.0
+  index[, c('x','y')] <- index[,c('x','y')] * index$scale
 
-  embdf_n1 <- embdf_n1[names(r$labels1),]
-  embdf_n1[, r$term1] <- as.character(r$labels1)
-  embdf_n1$rname <- rownames(embdf_n1)
-  embdf_n1t <- embdf_n1[r$term1, ]
-  embdf_n1 <- embdf_n1[-which(rownames(embdf_n1) == r$term1), ]
-
-  embdf_n2 <- embdf_n2[names(r$labels2),]
-  embdf_n2[, r$term2] <- as.character(r$labels2)
-  embdf_n2$rname <- rownames(embdf_n2)
-  embdf_n2t <- embdf_n2[r$term2, ]
-  embdf_n2 <- embdf_n2[-which(rownames(embdf_n2) == r$term2), ]
-
-  # averaged vectors
-  embdf_avg <- embdf
-  embdf_avg[names(r$labels1),'class1'] <- r$labels1
-  embdf_avg[names(r$labels2),'class2'] <- r$labels2
-
-  embdf_avg_1 <- embdf_avg %>% filter(!is.na(class1)) %>% group_by(class1) %>% summarise(V1=mean(V1), V2=mean(V2))
-  embdf_avg_2 <- embdf_avg %>% filter(!is.na(class2)) %>% group_by(class2) %>% summarise(V1=mean(V1), V2=mean(V2))
-
-  embdf_navg_1 <- as.data.frame(t(apply(embdf_avg_1[,c('V1','V2')], 1, function(vec) (vec / sqrt(sum(vec^2)))))) * 0.6
-  embdf_navg_1s <- as.data.frame(t(apply(embdf_avg_1[,c('V1','V2')], 1, function(vec) ( vec + unlist(embdf[r$term1, c('V1','V2')])) / 2 ))) # shifted average
-  embdf_navg_1s <- as.data.frame(t(apply(embdf_navg_1s[,c('V1','V2')], 1, function(vec) (vec / sqrt(sum(vec^2)))))) * 0.6
-  embdf_navg_1[,'rname'] <- as.factor(sub('0', '', paste0(r$term1, embdf_avg_1$class1)))
-  embdf_navg_1[,'class'] <-  as.factor(embdf_avg_1$class1)
-  embdf_navg_1s <- cbind(embdf_navg_1s, embdf_navg_1[,c('rname','class')])
-
-  embdf_navg_2 <- as.data.frame(t(apply(embdf_avg_2[,c('V1','V2')], 1, function(vec) (vec / sqrt(sum(vec^2)))))) * 0.6
-  embdf_navg_2s <- as.data.frame(t(apply(embdf_navg_2[,c('V1','V2')], 1, function(vec) ( vec + unlist(embdf[r$term2, c('V1','V2')])) / 2 )))
-  embdf_navg_2s <- as.data.frame(t(apply(embdf_navg_2s[,c('V1','V2')], 1, function(vec) (vec / sqrt(sum(vec^2)))))) * 0.6
-  embdf_navg_2[,'rname'] <- as.factor(sub('0', '', paste0(r$term2, embdf_avg_2$class2)))
-  embdf_navg_2[,'class'] <- as.factor(embdf_avg_2$class2)
-  embdf_navg_2s <- cbind(embdf_navg_2s, embdf_navg_2[,c('rname','class')])
+  # prepare colo labels for different senses
+  index$usense <- index$sense + 1
+  index$usense[index$t2] <- (index$usense[index$t2] + R1$nsenses + 1)
 
   circles <- get_circles(dia = c(1.2, 1.6, 2))
 
   p <- ggplot() +
-    geom_path (data = circles, aes(x = x, y = y, group = lev), colour = 'gray') +
-    geom_label(data = embdf_n1, aes_string(x='V1', y='V2', label='rname',fill = r$term1), colour = "black") +
-    geom_label(data = embdf_n2, aes_string(x='V1', y='V2', label='rname',fill = r$term2), colour = "white") +
-    geom_label_repel(data = embdf_navg_1, aes_string(x='V1', y='V2', label='rname',fill = 'class'), color = 'black') +
-    geom_label_repel(data = embdf_navg_2, aes_string(x='V1', y='V2', label='rname', fill = 'class'), color = 'white') +
-    geom_segment(data = embdf_navg_1, aes_string(x='0', y='0', xend='V1', yend='V2', color='class'), arrow = arrow(length = unit(0.01, 'npc'))) +
-    geom_segment(data = embdf_navg_2, aes_string(x='0', y='0', xend='V1', yend='V2', color='class'),linetype='dashed', arrow = arrow(length = unit(0.01, 'npc'))) +
-    geom_hline(yintercept=0, linetype='dashed', color = 'gray') +
-    geom_vline(xintercept=0, linetype='dashed', color = 'gray') +
-    geom_text(data = embdf_n1t, aes_string(x=0, y=-1, label = 'rname'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') +
-    geom_text(data = embdf_n2t, aes_string(x=0, y=-0.8, label = 'rname'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') +
-    guides(colour = guide_legend(override.aes = list(size=6))) +
+    geom_path (data = circles, aes(x = x, y = y, group = lev), colour = 'gray') + # circles
+    geom_label(data = index[index$t1 & index$sense > 0 & !index$is_sense_vector,], aes_string(x='x', y='y', label='mterm', fill = 'usense'), colour = 'black') + # t1 terms
+    geom_label(data = index[index$t2 & index$sense > 0 & !index$is_sense_vector,], aes_string(x='x', y='y', label='mterm', fill = 'usense'), colour = 'white') + # t2 terms
+    geom_label_repel(data = index[index$t1 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='x', y='y', label='mterm', fill = 'usense'), color = 'black') + # t1 sense vectors + original t1 vector
+    geom_label_repel(data = index[index$t2 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='x', y='y', label='mterm', fill = 'usense'), color = 'white') + # t2 sense vectors + original t1 vector
+    geom_segment(data = index[index$t1 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='0', y='0', xend='x', yend='y', color='usense'), arrow = arrow(length = unit(0.01, 'npc'))) + # arrows t1
+    geom_segment(data = index[index$t2 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='0', y='0', xend='x', yend='y', color='usense'), arrow = arrow(length = unit(0.01, 'npc')), linetype='dashed') + # arrows t2
+    geom_hline(yintercept=0, linetype='dashed', color = 'gray') + # add a horizontal line
+    geom_vline(xintercept=0, linetype='dashed', color = 'gray') + # add a vertical line
+    geom_text(data = index[index$t1 & index$sense == 0,], aes_string(x=0, y=-1, label = 'mterm'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') + # add term 1 on the outer circle
+    geom_text(data = index[index$t2 & index$sense == 0,], aes_string(x=0, y=-0.8, label = 'mterm'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') + # add term 2 on the inner circle
+    guides(colour = guide_legend(override.aes = list(size=8))) +
     xlab("") + ylab("") +
     theme_light(base_size=20) +
     # theme_classic(base_size=20) +
@@ -176,8 +174,8 @@ plot_bulls_eye <- function(embdf) {
       axis.text.y      = element_blank(),
       axis.ticks       = element_blank(),
       axis.line        = element_blank(),
-      panel.border     = element_blank(),
-      legend.position  = 'none'
+      panel.border     = element_blank()
+      #legend.position  = 'none'
     )
   p
 
@@ -214,6 +212,30 @@ embdf_PCA <- function(M, ndim = 2, normalize_length = T) {
   colnames(emb) <- gsub('PC', 'V',colnames(emb))
   rownames(emb) <- colnames(M)
   return(emb)
+}
+
+get_circles <- function(center=c(0,0), dia = c(1.2, 1.6, 2)){
+  circleFun <- function(center=c(0,0), diameter=1, npoints=100, start=0, end=2, filled=FALSE){
+    tt <- seq(start*pi, end*pi, length.out=npoints)
+    df <- data.frame(
+      x = center[1] + diameter / 2 * cos(tt),
+      y = center[2] + diameter / 2 * sin(tt)
+    )
+    if(filled==TRUE) { #add a point at the center so the whole 'pie slice' is filled
+      df <- rbind(df, center)
+    }
+    return(df)
+  }
+  circlegrid <- data.frame(dia = dia)
+  circlegrid <- circlegrid %>%
+    mutate(data = lapply(dia, function(x) {
+      df     <- circleFun(center = center, diameter = x)
+      df$lev <- x
+      df
+    }))
+  circles <- bind_rows(circlegrid$data)
+  circles$lev <- as.factor(circles$lev)
+  return(circles)
 }
 
 
