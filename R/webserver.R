@@ -1,7 +1,7 @@
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(ggrepel))
+suppressPackageStartupMessages(library(dplyr))
 
-library(ggplot2)
-library(ggrepel)
-library(dplyr)
 #'
 #' R Webserver wrapper
 #'
@@ -47,8 +47,12 @@ function(res, term='vitamin', model=sensevectors$.defaults$vsm_model){
 #* @param term The term (default: vitamin)
 #* @param POS The part of speech of the term (default: NN)
 #* @param RET which information to return (default: index)
+#* @param vsm_modelname The vector space model to use
+#* @param jbt_sense_api The jbt api to use
+#* @param topn_sense_terms
+#* @param shift_lambda
 #* @get /sensevector
-function(res, term='vitamin', POS='NN', RET='index'){
+function(res, term='vitamin', POS='NN', RET='index', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda){
   # @ serializer contentType list(type="application/json")
   # json <- jsonlite::toJSON(list(
   #   index <- vec$index,
@@ -66,38 +70,43 @@ function(res, term='vitamin', POS='NN', RET='index'){
   )
 }
 
-#* Plot out data from the iris dataset (EXAMPLE FUNCTION)
-#* @param spec If provided, filter the data to only this species (e.g. 'setosa')
-#* @get /plot
-#* @png
-function(spec){
-  myData <- iris
-  title <- "All Species"
-
-  # Filter if the species was specified
-  if (!missing(spec)){
-    title <- paste0("Only the '", spec, "' Species")
-    myData <- subset(iris, Species == spec)
-  }
-
-  plot(myData$Sepal.Length, myData$Petal.Length,
-       main=title, xlab="Sepal Length", ylab="Petal Length")
-}
+# #* Plot out data from the iris dataset (EXAMPLE FUNCTION)
+# #* @param spec If provided, filter the data to only this species (e.g. 'setosa')
+# #* @get /plot
+# #* @png
+# function(spec){
+#   myData <- iris
+#   title <- "All Species"
+#
+#   # Filter if the species was specified
+#   if (!missing(spec)){
+#     title <- paste0("Only the '", spec, "' Species")
+#     myData <- subset(iris, Species == spec)
+#   }
+#
+#   plot(myData$Sepal.Length, myData$Petal.Length,
+#        main=title, xlab="Sepal Length", ylab="Petal Length")
+# }
 
 #* Plot senses of two terms
 #* @param term1
 #* @param term2
 #* @param POS1
 #* @param POS2
+#* @param vsm_modelname The vector space model to use
+#* @param jbt_sense_api The jbt api to use
+#* @param topn_sense_terms
+#* @param shift_lambda
 #* @get /plotsenses
 #* @png
-function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model){
+function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda){
 
   vsm$load_default_matrices(list(vsm_modelname))
-
+  shift_lambda <- as.double(shift_lambda)
+  topn_sense_terms <- as.integer(topn_sense_terms)
   ## 1: get data
-  R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1)
-  R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2)
+  R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1, vsm_modelname = vsm_modelname, jbt_sense_api = jbt_sense_api, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
+  R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2, vsm_modelname = vsm_modelname, jbt_sense_api = jbt_sense_api, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
   R1$index$t1 <- T; R1$index$t2 <- F; R2$index$t1 <- F; R2$index$t2 <- T;
   index <- rbind(R1$index, R2$index)
   unique_i <- which(!duplicated(index$idx))
@@ -160,16 +169,16 @@ plot_bulls_eye <- function(index) {
   p <- ggplot() +
     geom_path (data = circles, aes(x = x, y = y, group = lev), colour = 'gray') + # circles
     geom_label(data = index[index$sense > 0 & !index$is_sense_vector,], aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # terms t1 & t2
-    geom_label_repel(data = index[(index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # t1 sense vectors + original t1 vector
+    geom_label_repel(data = index[(index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # t1 sense vectors + original t1 vector
     scale_color_identity() +
-    geom_segment(data = index[index$t1 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = arrow(length = unit(0.01, 'npc'))) + # arrows t1
-    geom_segment(data = index[index$t2 & (index$sense == 0 | (index$is_sense_vector & !index$is_shifted)),], aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = arrow(length = unit(0.01, 'npc')), linetype='dashed') + # arrows t2
+    geom_segment(data = index[index$t1 & (index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = arrow(length = unit(0.01, 'npc'))) + # arrows t1
+    geom_segment(data = index[index$t2 & (index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = arrow(length = unit(0.01, 'npc')), linetype='dashed') + # arrows t2
     geom_hline(yintercept=0, linetype='dashed', color = 'gray') + # add a horizontal line
     geom_vline(xintercept=0, linetype='dashed', color = 'gray') + # add a vertical line
     geom_text(data = index[index$t1 & index$sense == 0,], aes_string(x=0, y=-1, label = 'mterm'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') + # add term 1 on the outer circle
     geom_text(data = index[index$t2 & index$sense == 0,], aes_string(x=0, y=-0.8, label = 'mterm'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') + # add term 2 on the inner circle
     guides(colour = guide_legend(override.aes = list(size=8))) +
-    xlab("") + ylab("") +
+    xlab('') + ylab('') +
     # theme_light(base_size=20) +
     theme_classic(base_size=20) +
     theme(
