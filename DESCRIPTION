@@ -23,4 +23,5 @@ Imports:
   ggplot2 (>= 2.2.1),
   ggrepel (>= 0.7.0),
   dplyr (>= 0.7.4),
+  reticulate (>= 1.5),
   argparse (>= 1.1.1)

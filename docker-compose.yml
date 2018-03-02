@@ -1,0 +1,22 @@
+##
+#
+##
+version: '2.1'
+
+services:
+
+  webserver:
+    image: "senseasim:0.0.1"
+    #restart: unless-stopped
+    stdin_open: true
+    tty: true
+    environment:
+      - DATA_HOME=/opt/project/data
+      - DATA_TEMP=/opt/project/data/temp
+    volumes:
+#      - ${PWD}/data:/opt/project/data
+      - /Users/rem/data:/opt/project/data
+    ports:
+      - "6348:6348"
+    entrypoint: bash
+

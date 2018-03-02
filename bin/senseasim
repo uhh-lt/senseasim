@@ -27,8 +27,7 @@ if(args$webserver) {
 
   library(senseasim)
   pr <- plumber::plumb('R/webserver.R')
-  pr$run(port=args$port, swagger = TRUE)
-  pr$run()
+  pr$run(host='0.0.0.0', port=args$port, swagger = TRUE)
 
 }else{
   message(sprintf('[%s-%d-%s] not running script. Specify \'--webserver\' parameter if you want to run the webserver.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S')))
