@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript --vanilla --default-packages=methods,utils
+#!/usr/bin/env Rscript --vanilla --default-packages=methods,utils,stats
 
 cliargs = commandArgs(trailingOnly=TRUE)
 

@@ -119,7 +119,7 @@ function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname 
   p <- vis$plotsenses(term1, term2, POS1, POS2, vsm_modelname, jbt_sense_api, topn_sense_terms, shift_lambda, reduction)
 
   #: return the plot
-  p
+  print(p)
 }
 
 #* Log some information about the incoming request

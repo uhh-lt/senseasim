@@ -19,7 +19,7 @@ services:
       - /Users/rem/data:/opt/project/data
     ports:
       - "6348:6348"
-    entrypoint: Rscript --vanilla --default-packages=methods,utils /opt/project/bin/senseasim --webserver
+    entrypoint: Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/senseasim --webserver
 
   bash:
     image: "senseasim:0.0.1"
