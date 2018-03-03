@@ -52,7 +52,8 @@ with(vis, {
     set.seed(1)
     num_rows_sample <- 15000
     Mdf <- switch (reduction,
-      pca = embdf_PCA(M, ndim = 2, normalize_length = T),
+      pca  = embdf_PCA(M, ndim = 2, normalize_length = T),
+      trig = embdf_COS(M, normalize_length = T, balance_scale = T),
       embdf_TSNE(M, ndim = 2, normalize_length = T)
     )
 
@@ -78,22 +79,22 @@ with(vis, {
     index$usense[index$t2] <- (index$usense[index$t2] + max(index$sense[index$t1]) + 1)
     index$usense <- sapply(index$usense, toString)
     index$fontcolor <- 'black'
-    index$fontcolor[index$t2] <- 'white'
+    index$fontcolor[index$t2] <- 'lightgray'
     ncolors <- max(index$sense[index$t1]) + max(index$sense[index$t2]) + 2
 
     circles <- get_circles(dia = c(1.2, 1.6, 2))
 
     p <- ggplot2::ggplot() +
       ggplot2::geom_path (data = circles, ggplot2::aes(x = x, y = y, group = lev), colour = 'gray') + # circles
-      ggplot2::geom_label(data = index[index$sense > 0 & !index$is_sense_vector & !index$unknown,], ggplot2::aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # terms t1 & t2
-      ggrepel::geom_label_repel(data = index[(index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], ggplot2::aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # t1 sense vectors + original t1 vector
-      ggplot2::scale_color_identity() +
-      ggplot2::geom_segment(data = index[index$t1 & (index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], ggplot2::aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = ggplot2::arrow(length = ggplot2::unit(0.01, 'npc'))) + # arrows t1
-      ggplot2::geom_segment(data = index[index$t2 & (index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], ggplot2::aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = ggplot2::arrow(length = ggplot2::unit(0.01, 'npc')), linetype='dashed') + # arrows t2
       ggplot2::geom_hline(yintercept=0, linetype='dashed', color = 'gray') + # add a horizontal line
       ggplot2::geom_vline(xintercept=0, linetype='dashed', color = 'gray') + # add a vertical line
       ggplot2::geom_text(data = index[index$t1 & index$sense == 0,], ggplot2::aes_string(x=0, y=-1, label = 'mterm'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') + # add term 1 on the outer circle
       ggplot2::geom_text(data = index[index$t2 & index$sense == 0,], ggplot2::aes_string(x=0, y=-0.8, label = 'mterm'), color = 'darkgray', fontface='italic', nudge_y = -0.05, size=8, family='sans') + # add term 2 on the inner circle
+      ggplot2::geom_label(data = index[index$sense > 0 & !index$is_sense_vector & !index$unknown,], ggplot2::aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # terms t1 & t2
+      ggplot2::geom_segment(data = index[index$t1 & (index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], ggplot2::aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = ggplot2::arrow(length = ggplot2::unit(0.01, 'npc'))) + # arrows t1
+      ggplot2::geom_segment(data = index[index$t2 & (index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], ggplot2::aes_string(x='0', y='0', xend='x', yend='y'), color = 'darkgray', arrow = ggplot2::arrow(length = ggplot2::unit(0.01, 'npc')), linetype='dashed') + # arrows t2
+      ggrepel::geom_label_repel(data = index[(index$sense == 0 | (index$is_sense_vector & index$is_shifted)),], ggplot2::aes_string(x='x', y='y', label='mterm', fill = 'usense', color = 'fontcolor')) + # t1 sense vectors + original t1 vector
+      ggplot2::scale_color_identity() +
       ggplot2::guides(colour = ggplot2::guide_legend(override.aes = list(size=ncolors))) +
       ggplot2::xlab('') + ggplot2::ylab('') +
       # theme_light(base_size=20) +
@@ -141,6 +142,22 @@ with(vis, {
       emb <- as.data.frame(t(apply(pca$x[,1:ndim], 1, function(vec) (vec / sqrt(sum(vec^2)))))) # take only first ndim dimensions and normalize vector length
     colnames(emb) <- gsub('PC', 'V',colnames(emb))
     rownames(emb) <- colnames(M)
+    return(emb)
+  }
+
+  embdf_COS <- function(M, normalize_length = T, balance_scale = T) {
+    emb <- data.frame(matrix(NA, nrow = ncol(M), ncol = 2, dimnames = list(colnames(M), c('x','y'))))
+    ix <- seq_len(ncol(M))
+    ones <- rep(1,nrow(M))
+    emb$x <- sapply(ix , function(i) senseasim$cos(M[,i], ones))
+    if(balance_scale){
+      alpha <- ( +1-(-1) ) / ( max(emb$x)-min(emb$x) )
+      emb$x <- emb$x * alpha
+      beta <- -1 - min(emb$x)
+      emb$x <- emb$x + beta
+    }
+    emb$y <- sqrt(1-emb$x^2) # damn, we're losing the sign here, it could be also -
+
     return(emb)
   }
 

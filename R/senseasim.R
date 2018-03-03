@@ -70,6 +70,17 @@ with(senseasim, {
   }
 
   #'
+  #' define cosine similarity with normalized length vectors (unit length)
+  #'
+  #' v1 and v2 can be matrices
+  #'
+  ncos <- function(v1,v2){
+    #co <- sum(v1*v2)
+    co <- v1 %*% v2 # dot product
+    return(co)
+  }
+
+  #'
   #' define euclidean similarity
   #'
   euc <- function(v1,v2){
@@ -77,6 +88,35 @@ with(senseasim, {
     sim <- 1 / (1+dist)
     return(sim)
   }
+
+  #' #'
+  #' #' define sine difference
+  #' #'
+  #' sin <- function(v1,v2){
+  #'   si <- sqrt(sum(pracma::cross(v1,v2)^2)) / (sqrt(sum(v1^2)) * sqrt(sum(v2^2)))
+  #'   return(co)
+  #' }
+  #'
+  #' #'
+  #' #' cross product function (see https://stackoverflow.com/questions/36798301/r-compute-cross-product-of-vectors-physics#answer-36802067)
+  #' #'
+  #' xprod <- function(...) {
+  #'   args <- list(...)
+  #'   # Check for valid arguments
+  #'   if (length(args) == 0) {
+  #'     stop("No data supplied")
+  #'   }
+  #'   len <- unique(sapply(args, FUN=length))
+  #'   if (length(len) > 1) {
+  #'     stop("All vectors must be the same length")
+  #'   }
+  #'   if (len != length(args) + 1) {
+  #'     stop("Must supply N-1 vectors of length N")
+  #'   }
+  #'   # Compute generalized cross product by taking the determinant of sub-matricies
+  #'   m <- do.call(rbind, args)
+  #'   sapply(seq_len(len), FUN=function(i) { det(m[,-i,drop=FALSE]) * (-1)^(i+1) })
+  #' }
 
 }) # end with(...)
 
