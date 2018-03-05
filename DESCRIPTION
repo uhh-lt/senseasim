@@ -15,6 +15,7 @@ Imports:
   tictoc (>= 1.0),
   bigmemory (>= 4.5.33),
   jsonlite (>= 1.5),
+  data.table (>= 1.10.4-3),
   rio (>= 0.5.5),
   parallel (>= 3.4.3),
   plumber (>= 0.4.4),

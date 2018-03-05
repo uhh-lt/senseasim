@@ -4,26 +4,26 @@ with(vsm, {
 
   .models_loaded <- list()
 
-  .models <- function() list(
+  .default_models <- function() list(
     w2v_gnews_300   = list(
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/w2v/GoogleNews-vectors-negative300.txt'),
+      local_location = paste0(cache$data_dir(), '/w2v/GoogleNews-vectors-negative300.txt'),
       transformer = function(w) w,
-      unk = 'UNK'
+      unk = 'unknown'
     ),
     glove_6B_50d = list(
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/glove/glove.6B.50d.txt'),
+      local_location = paste0(cache$data_dir(),'/glove/glove.6B.50d.txt'),
       transformer    = function(w) tolower(w),
-      unk = 'UNK'
+      unk = 'unknown'
     ),
     glove_6B_50d_1K = list(
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/glove/glove.6B.50d.1K.txt'),
+      local_location = paste0(cache$data_dir(),'/glove/glove.6B.50d.1K.txt'),
       transformer    = function(w) tolower(w),
-      unk = 'UNK'
+      unk = 'the'
     ),
     glove_6B_300d = list(
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/glove/glove.6B.300d.txt'),
+      local_location = paste0(cache$data_dir(),'/glove/glove.6B.300d.txt'),
       transformer    = function(w) tolower(w),
-      unk = 'UNK'
+      unk = 'unknown'
     ),
     sympat300d = list(
       local_location = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_300.txt'),
@@ -31,37 +31,41 @@ with(vsm, {
       unk = 'UNK'
     ),
     sympat500d = list(
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_500.txt'),
+      local_location = paste0(cache$data_dir(),'/sympatEmb/sp_plus_embeddings_500.txt'),
       transformer    = function(w) tolower(w),
       unk = 'UNK'
     ),
     sympat10000d = list(
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_10000.txt'),
+      local_location = paste0(cache$data_dir(),'/sympatEmb/sp_plus_embeddings_10000.txt'),
       transformer    = function(w) tolower(w),
       unk = 'UNK'
     ),
     paragramSL = list(
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/paragram/paragram_300_sl999/paragram_300_sl999.txt'),
+      local_location = paste0(cache$data_dir(),'/paragram/paragram_300_sl999/paragram_300_sl999.txt'),
       transformer    = function(w) tolower(w),
-      unk = 'UNK'
+      unk = 'unknown'
     ),
     paragramWS = list(
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/paragram/paragram_300_ws353/paragram_300_ws353.txt'),
+      local_location = paste0(cache$data_dir(),'/paragram/paragram_300_ws353/paragram_300_ws353.txt'),
       transformer    = function(w) tolower(w),
-      unk = 'UNK'
+      unk = 'unknown'
     ),
     EN_100k_hal_lsa = list(
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/lsafun/EN_100k'),
+      local_location = paste0(cache$data_dir(),'/lsafun/EN_100k'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
     EN_100k_lsa = list(
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/lsafun/EN_100k_lsa'),
+      local_location = paste0(cache$data_dir(),'/lsafun/EN_100k_lsa'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
+    ),
+    ft_de = list(
+      local_location = paste0(cache$data_dir(),'/fasttext/cc.de.300.vec.gz'),
+      transformer    = function(w) w,
+      unk = 'UNKNOWN'
     )
   )
-
 
   .sensemodels <- function(){
     return(list(
@@ -69,6 +73,66 @@ with(vsm, {
       'autoextend' = list(paste0(Sys.getenv(c('DATA_HOME')),'/autoextend/lexemes.txt'), function(w) tolower(w))
     ))
   }
+
+  build_bigmatrix_from_txt <- function(filename, separator = ' ') {
+    # get the filenames
+    bckngpath <- dirname(filename)
+    bckngfile <- paste0(basename(filename), '.bin')
+    bckngdesc <- paste0(bckngfile, '.desc')
+
+    message(sprintf('[%s-%d-%s] Trying to convert Vector Space Matrix: \n  input: \'%s\' \n  path:  \'%s\' \n  bin:   \'%s\'  \n  desc:  \'%s\' ',
+                    gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"),
+                    filename, bckngpath, bckngfile, bckngdesc))
+
+    if(!file.exists(filename)) {
+      message(sprintf('[%s-%d-%s] Input file does not exist. Aborting.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+      return(F)
+    }
+
+    if(file.exists(file.path(bckngpath, bckngdesc))) {
+      message(sprintf('[%s-%d-%s] descriptor file exists. Aborting.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+      return(F)
+    }
+
+    # read matrix, convert to bigmatrix and store descriptor and binary backing file
+    tictoc::tic('Elapsed')
+    tictoc::tic('Finished loading.')
+
+    message(sprintf('[%s-%d-%s] Loading...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+
+    if(endsWith(filename, '.gz')){
+      df <- data.table::fread(sprintf('cat %s | gzip -d', filename), sep=separator, header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
+    }else{
+      df <- data.table::fread(filename, sep=separator, header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
+    }
+
+
+    colnames(df) <- NULL # remove colnames
+    tictoc::tic('Fixed missing rowname values.')
+    missing_names <- which(is.na(df[,1]) | is.null(df[,1]) | df[,1] == '') # first column is rownames, find missing values
+    df[missing_names, 1] <- sapply(missing_names, function(ri) paste0('missing_row_',ri)) # fix missing values
+    message(sprintf('[%s-%d-%s] Removed %d vectors with missing rownames.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), length(missing_names)))
+    tictoc::toc()
+    rownames(df) <- df[,1] # first column is rownames
+    df <- df[,-1] # remove first column
+    tictoc::toc()
+    message(sprintf('[%s-%d-%s] Data size: %s', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), format(object.size(df), units = "auto")))
+    message('Memory usage:')
+    print.table(gc(reset=T)) # show some memory usage
+    tictoc::tic('Finished converting.')
+
+    message(sprintf('[%s-%d-%s] Converting...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+    require(bigmemory); options(bigmemory.allow.dimnames=TRUE)
+    bm <- bigmemory::as.big.matrix(df, backingfile = bckngfile, backingpath = bckngpath, descriptorfile = bckngdesc, shared = T)
+    tictoc::toc()
+
+    # free memory
+    rm(df)
+    message('Memory usage:')
+    print.table(gc(reset=T)) # show some memory usage
+    tictoc::toc()
+  }
+
 
   load_default_matrices <- function(models_to_load = list('EN_100k_lsa')) {
     # load latent vectors
@@ -105,8 +169,10 @@ with(vsm, {
         stop(sprintf('modelname is unknonwn \'%s\'.', modelname))
     }
 
-    if(!file.exists(fdesc))
-      stop(sprintf('[%s-%d-%s] loading Vector Space Matrix from \'%s\' failed, file does not exists. \nDo you need to run \'toBigMatrix.R\'?', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), fdesc))
+    if(!file.exists(fdesc)) {
+      message(sprintf('[%s-%d-%s] loading Vector Space Matrix from \'%s\' failed, file does not exists. \nDo you need to run \'toBigMatrix.R\'?', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), fdesc))
+      return(F)
+    }
 
     # else read vector space matrix as bigmatrix
     message(sprintf('[%s-%d-%s] loading Vector Space Matrix \'%s\'', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), modelname))
