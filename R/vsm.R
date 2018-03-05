@@ -4,7 +4,7 @@ with(vsm, {
 
   .models_loaded <- list()
 
-  .default_models <- function() list(
+  .models <- function() list(
     w2v_gnews_300   = list(
       local_location = paste0(cache$data_dir(), '/w2v/GoogleNews-vectors-negative300.txt'),
       transformer = function(w) w,
@@ -213,6 +213,28 @@ with(vsm, {
     }else{
       return(model$unk)
     }
+  }
+
+  #'
+  #'
+  #'
+  get_nearest_neighbors <- function(term, modelname, n = 500, simfun = senseasim$cos) {
+    message(sprintf('[%s-%d-%s]: Preparing similarity values for term \'%s\' and matrix \'%s\'. ', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), term, modelname))
+    model <- .models_loaded[[modelname]]
+    mterm <- model$transform(term)
+    fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', modelname, '__'))
+    sim <- cache$load(filename = fname, loadfun = function() {
+      # get top n most similar words in terms of
+      v <- model$M[mterm$idx,]
+      sim <- sapply(seq_len(nrow(model$M)), function(i) simfun(model$M[i,], v))
+      # free some memory
+      rm(v)
+      return(sim)
+    })
+    ordr <- order(sim, decreasing = T)[1:min(n, nrow(model$M))] # gets the indexes
+    sim <- sim[ordr]
+    names(sim) <- model$vocab[ordr]
+    return(sim)
   }
 
 })

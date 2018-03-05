@@ -1,5 +1,3 @@
-
-
 #'
 #'
 #' access jbt models cached data
