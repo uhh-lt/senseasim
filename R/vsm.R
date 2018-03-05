@@ -218,23 +218,60 @@ with(vsm, {
   #'
   #'
   #'
-  get_nearest_neighbors <- function(term, modelname, n = 500, simfun = senseasim$cos) {
+  similarities <- function(term, modelname, simfun = senseasim$cos, simfunname = 'cos') {
     message(sprintf('[%s-%d-%s]: Preparing similarity values for term \'%s\' and matrix \'%s\'. ', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), term, modelname))
     model <- .models_loaded[[modelname]]
     mterm <- model$transform(term)
-    fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', modelname, '__'))
+    fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', modelname, '__', simfunname, '__'))
     sim <- cache$load(filename = fname, loadfun = function() {
       # get top n most similar words in terms of
       v <- model$M[mterm$idx,]
       sim <- sapply(seq_len(nrow(model$M)), function(i) simfun(model$M[i,], v))
       # free some memory
       rm(v)
+      # order the result and store the dataframe
+      ordr <- order(sim, decreasing = T) # gets the indexes
+      sim <- sim[ordr]
+      names(sim) <- model$vocab[ordr]
+      sim <- as.data.frame(sim)
+      sim$idx <- ordr
       return(sim)
     })
-    ordr <- order(sim, decreasing = T)[1:min(n, nrow(model$M))] # gets the indexes
-    sim <- sim[ordr]
-    names(sim) <- model$vocab[ordr]
     return(sim)
+  }
+
+  #'
+  #'
+  #'
+  similarity_matrix <- function(terms, modelname, n = 500, identifier = NULL, simfun = senseasim$cos, simfunname = 'cos', is.symmetric = T){
+    model <- .models_loaded[[modelname]]
+    n <- min(n, nrow(model$M))
+    terms <- terms[1:n]
+    if(is.integer(terms)) {
+      idx <- terms
+    } else {
+      idx <- sapply(terms, function(term) model$transform(term)$idx)
+    }
+
+    if(is.null(identifier)) {
+      identifier <- paste0(terms, collapse = ';')
+    }
+    message(sprintf('[%s-%d-%s]: Preparing similarity values for term \'%s\' and matrix \'%s\'. ', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), identifier, modelname))
+
+    fname <- cache$get_filename(identifier, '', dirname = cache$data_temp_dir(), prefix = paste0('simmat__', modelname, '__', simfunname,  '__n', n, '__'))
+    SIM <- cache$load(filename = fname, loadfun = function() {
+      i <- seq_len(n-1)
+      # compute only lower triangular matrix
+      SIM <- as.matrix(sapply(i, function(k) { v_k <- model$M[idx[[k]],]; c(rep(NA, k), sapply(seq(k+1,n), function(l) { v_l <- model$M[idx[[l]],]; simfun(v_k, v_l) } )) } ))
+      diag(SIM) <- 1 # set diagonal entries to 1
+      SIM <- cbind(SIM,rep(1,n)) # add last column vector
+      SIM[upper.tri(SIM)] <- t(SIM)[upper.tri(SIM)] # copy lower triangle to upper triangle in the right order!
+      # set names
+      rownames(SIM) <- model$vocab[idx]
+      colnames(SIM) <- rownames(SIM)
+      return(SIM)
+    })
+    return(SIM)
   }
 
 })
