@@ -66,6 +66,13 @@ with(clust, {
     return(labels)
   }
 
+  merge_singleton_clusters <- function(labels){
+    quantities <- table(labels)
+    labels_with_size_1 <- names(which(quantities == 1))
+    labels[which(labels %in% labels_with_size_1)] <- NA
+    return(labels)
+  }
+
   # Clustering algorithms ----
 
   #' Chinese Whispers
@@ -83,16 +90,18 @@ with(clust, {
   #' @return a vector containing a cluster id for each input node
   chinese_whispers <- function(A, max_iter = 20, eps = 1e-5, remove_self_loops = T, allowsingletons = F){
     # init
-    N <- dim(A)[[1]]
+    assertthat::are_equal(ncol(A), nrow(A))
+    N <- nrow(A)
     # can nodes vote for their own class?
-    if(remove_self_loops)
-      A <- A * (1-diag(N))
-    labels <- 1:N
+    if(remove_self_loops) {
+      diag(A) <- 0
+    }
+    labels <- seq_len(N)
     labels_new <- labels
     names(labels_new) <- rownames(A)
 
-    for(iter in 1:max_iter){
-      for(u in sample(1:N, size = N, replace = F)){
+    for(iter in seq_len(max_iter)){
+      for(u in sample(seq_len(N), size = N, replace = F)) {
         # each neighbor votes for its class
         votes <- table(labels[which(A[u,] != 0)])
         if(length(votes) > 1){
@@ -102,7 +111,7 @@ with(clust, {
           labels_new[[u]] <- newlabel_u
         }
       }
-      if(sqrt(sum((labels-labels_new)^2)) <= eps){
+      if(sqrt(sum((labels-labels_new)^2)) <= eps) {
         if(!allowsingletons)
           labels_new <- merge_singleton_clusters(labels_new)
         message(sprintf('found %d clusters, took %d iterations.', length(unique(labels_new)), iter))
@@ -127,41 +136,44 @@ with(clust, {
   #' test: clust$mcl(twentynodes, addLoops = !remove_self_loops)$Cluster
   #'
   mcl <- function(A, e = 2, r = 2, ithresh = 1e-5, max_iter = 100, eps = 1e-5, remove_self_loops = F, add_dummy = F, allowsingletons = F){
-    N <- dim(A)[[1]]
-    # remove self loops
-    if(remove_self_loops)
-      A <- A * (1-diag(N))
-    # normalize by column
-    margins <- colSums(A)
-    A <- t(apply(A, MARGIN = 1, function(row) row / margins))
+    # init
+    assertthat::are_equal(ncol(A), nrow(A))
+    N <- nrow(A)
+
     # add an unconnected dummy node
     if(add_dummy){
       A <- cbind(rbind(A, 0), 0)
       A[N+1, N+1] <- 1
     }
 
+    # remove self loops
+    if(remove_self_loops) {
+      diag(A) <- 0
+    }
+    # normalize by column
+    margins <- colSums(A)
+    A <- t(apply(A, MARGIN = 1, function(row) row / margins))
+
     # helper function to interpret results
     interpret <- function(){
       # interpret cluster results
       labels <- replicate(N, -1)
-      for(i in 1:N){
+      for(i in seq_len(N)){
         votes <- which(A[,i] == max(A[,i]))
         # resolve ties
-        labels[[i]] <- {
-          if(length(votes) > 1)
-            paste0(votes, collapse = '_')
-          # sample(length(votes), 1)
-          else if(length(votes) < 1)
-            -1
-          else
-            votes
-        }
+        if(length(votes) > 1)
+          labels[[i]] <- paste0(votes, collapse = '_')
+        # sample(length(votes), 1)
+        else if(length(votes) < 1)
+          labels[[i]] <- -1
+        else
+          labels[[i]] <- votes
       }
 
       if (!allowsingletons)
         labels <- merge_singleton_clusters(labels)
 
-      names(labels) <- rownames(A)[1:N]
+      names(labels) <- rownames(A)
       return(labels)
     }
 
@@ -174,7 +186,7 @@ with(clust, {
       return(rM)
     }
 
-    for(iter in 1:max_iter){
+    for(iter in seq_len(max_iter)){
       # expand
       newA <- mpow(A, e)
       # inflate
@@ -196,13 +208,6 @@ with(clust, {
     # interpret results
     labels <- interpret()
     message(sprintf('found %d clusters, took %d iterations.', length(unique(labels)), max_iter))
-    return(labels)
-  }
-
-  merge_singleton_clusters <- function(labels){
-    quantities <- table(labels)
-    labels_with_size_1 <- names(which(quantities == 1))
-    labels[which(labels %in% labels_with_size_1)] <- -2
     return(labels)
   }
 
@@ -242,11 +247,12 @@ with(clust, {
   }
 
   #'
+  #' (!!!EXPERIMENTAL!!!)
   #' Self Organizing Maps clusters by rows
   #'
-  selforganizingmaps <- function(A, xdim = 2, ydim = 3, allowsingletons = F){
+  som <- function(A, xdim = 2, ydim = 3, allowsingletons = F){
     #require(kohonen) # for selforganizing maps
-    result <- kohonen::som(A, grid=somgrid(xdim = xdim, ydim = ydim))
+    result <- kohonen::som(A, grid=kohonen::somgrid(xdim = xdim, ydim = ydim))
     labels <- result$unit.classif
     names(labels) <- rownames(A)
     if(!allowsingletons)
