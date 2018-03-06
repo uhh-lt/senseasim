@@ -15,11 +15,14 @@ RUN set -ex \
 
 ENV LANG en_US.UTF-8
 
-RUN mkdir -p /opt/project
+RUN mkdir -p /opt/project && mkdir -p /data/temp
 
 COPY . /opt/project
 
 WORKDIR /opt/project
+
+ENV DATA_HOME /data
+ENV DATA_TEMP /data/temp
 
 RUN set -ex \
       && Rscript -e 'install.packages("devtools")' \

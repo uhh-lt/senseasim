@@ -147,7 +147,7 @@ with(sensevectors, {
   run <- function(inputfile=NULL, outputfile=NULL){
     init()
     if(is.character(inputfile)) {
-      words <- rio::import(inputfile, sep=' ', fill=T, header=F)
+      words <- data.table::fread(inputfile, sep=' ', header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
       r <- lapply(1:nrow(words), function(i) {
         term <- words[i,1]
         POS <- words[i,2]
@@ -166,7 +166,7 @@ with(sensevectors, {
   }
 
   init_cluster <- function(cl, inputfile, outputfile) {
-    words <<- rio::import(inputfile, sep=' ', fill=T, header=F)
+    words <<- data.table::fread(inputfile, sep=' ', header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
     parallel::clusterExport(cl, c('words','sensevectors'), envir = .GlobalEnv)
     parallel::clusterExport(cl, c('outputfile'), envir = environment())
 
