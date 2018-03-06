@@ -6,7 +6,7 @@ version: '2.1'
 services:
 
   webserver:
-    image: "senseasim:0.0.2"
+    image: "uhhlt/senseasim:0.0.2"
     build:
       context: ./
       dockerfile: Dockerfile
@@ -19,7 +19,7 @@ services:
     entrypoint: Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/senseasim --webserver
 
   bash:
-    image: "senseasim:0.0.2"
+    image: "uhhlt/senseasim:0.0.2"
     build:
       context: ./
       dockerfile: Dockerfile
@@ -32,7 +32,7 @@ services:
     entrypoint: bash
 
   rsession:
-    image: "senseasim:0.0.2"
+    image: "uhhlt/senseasim:0.0.2"
     build:
       context: ./
       dockerfile: Dockerfile
