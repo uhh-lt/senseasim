@@ -243,7 +243,7 @@ with(vsm, {
   #'
   #'
   #'
-  similarity_matrix <- function(terms, modelname, n = 500, identifier = NULL, simfun = senseasim$cos, simfunname = 'cos', is.symmetric = T){
+  similarity_matrix <- function(terms, modelname, n = 500, identifier = NULL, simfun = senseasim$cos, simfun.name = 'cos', simfun.is.symmetric = T){
     model <- .models_loaded[[modelname]]
     n <- min(n, nrow(model$M))
     terms <- terms[1:n]
@@ -260,12 +260,16 @@ with(vsm, {
 
     fname <- cache$get_filename(identifier, '', dirname = cache$data_temp_dir(), prefix = paste0('simmat__', modelname, '__', simfunname,  '__n', n, '__'))
     SIM <- cache$load(filename = fname, loadfun = function() {
-      i <- seq_len(n-1)
-      # compute only lower triangular matrix
-      SIM <- as.matrix(sapply(i, function(k) { v_k <- model$M[idx[[k]],]; c(rep(NA, k), sapply(seq(k+1,n), function(l) { v_l <- model$M[idx[[l]],]; simfun(v_k, v_l) } )) } ))
-      diag(SIM) <- 1 # set diagonal entries to 1
-      SIM <- cbind(SIM,rep(1,n)) # add last column vector
-      SIM[upper.tri(SIM)] <- t(SIM)[upper.tri(SIM)] # copy lower triangle to upper triangle in the right order!
+      if(simfun.is.symmetric) {
+        i <- seq_len(n-1)
+        # compute only lower triangular matrix
+        SIM <- as.matrix(sapply(i, function(k) { v_k <- model$M[idx[[k]],]; c(rep(NA, k), sapply(seq(k+1,n), function(l) { v_l <- model$M[idx[[l]],]; simfun(v_k, v_l) } )) } ))
+        diag(SIM) <- 1 # set diagonal entries to 1
+        SIM <- cbind(SIM,rep(1,n)) # add last column vector
+        SIM[upper.tri(SIM)] <- t(SIM)[upper.tri(SIM)] # copy lower triangle to upper triangle in the right order!
+      }else{
+        SIM <- as.matrix(sapply(seq_len(n), function(k) { v_k <- model$M[idx[[k]],]; sapply(seq_len(n), function(l) { v_l <- model$M[idx[[l]],]; simfun(v_k, v_l) } ) } ))
+      }
       # set names
       rownames(SIM) <- model$vocab[idx]
       colnames(SIM) <- rownames(SIM)
