@@ -148,7 +148,7 @@ with(sensevectors, {
     init()
     if(is.character(inputfile)) {
       words <- data.table::fread(inputfile, sep=' ', header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
-      r <- lapply(1:nrow(words), function(i) {
+      r <- lapply(seq_len(nrow(words)), function(i) {
         term <- words[i,1]
         POS <- words[i,2]
         get_and_write_sensevectors(term, POS, outputfile)
@@ -196,7 +196,7 @@ with(sensevectors, {
     init_cluster(cl, inputfile, outputfile)
 
     # apply in parallel
-    r <- parallel::parLapply(cl, 1:nrow(words), function(i) {
+    r <- parallel::parLapply(cl, seq_len(nrow(words)), function(i) {
       term <- words[i,1]
       POS <- words[i,2]
       get_and_write_sensevectors(term, POS, local_outputfile)

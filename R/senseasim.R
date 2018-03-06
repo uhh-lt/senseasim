@@ -4,15 +4,33 @@ senseasim <- new.env(parent = .GlobalEnv)
 with(senseasim, {
 
   #'
+  #' score
+  #'
+  score <- function(term1, term2, POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda, simfun = senseasim$cos) {
+
+    R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1, vsm_modelname = vsm_modelname, jbt_sense_api = jbt_sense_api, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
+    R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2, vsm_modelname = vsm_modelname, jbt_sense_api = jbt_sense_api, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
+    SIM <- sim.matrix(R1$v_shift, R2$v_shift, simfun = simfun)
+    maxscore <- max.sim(SIM)
+    return(list(
+      t1_info = R1,
+      t2_info = R2,
+      scores = SIM,
+      maxscore = maxscore
+    ))
+
+  }
+
+  #'
   #' create similarity martix between vectors of the two matrices
   #' compute similarities between each vector in matrix M1 and each other vector in matrix M2
-  #' similarities: rows are m1_ vectors, cols are m2_ vectors
+  #' similarities: rows are M1_ vectors, cols are M2_ vectors
+  #' M1 and M2 are expected to be column vectors! I.e. columns are examples, and rows are dimensions
   #' SIM[M1_i, M2_j]
   #'
-  msim <- function(M1, M2, simfun = cos){
-
+  sim.matrix <- function(M1, M2, simfun = cos){
     # columns of both matrices must match!
-    assertthat::see_if(assertthat::are_equal(dim(M1)[[2]], dim(M2)[[2]]), msg='Dimension mismatch: cols in M1 unequal to cols in M2!')
+    assertthat::see_if(assertthat::are_equal(nrow(M1), nrow(M2)), msg='Dimension mismatch: rows in M1 unequal to rows in M2!')
 
     # create the similarity matrix
     SIM <-
@@ -30,14 +48,17 @@ with(senseasim, {
 
     # if SIM is not a matrix because M1 matrix was merely a vector, correct it manually!
     if(!is.matrix(SIM)) {
-      SIM <- matrix(SIM, nrow=dim(M1)[2], ncol=dim(M2)[2], byrow = F)
+      SIM <- matrix(SIM, nrow=ncol(M1), ncol=ncol(M2), byrow = F)
       rownames(SIM) <- colnames(M1)
       colnames(SIM) <- colnames(M2)
     }
     return(SIM)
   }
 
-  maxsim <- function(SIM) {
+  #'
+  #' get the arg max similarity value from the similarity matrix
+  #'
+  max.sim <- function(SIM) {
     argmax_sim <- which.max(SIM)
     if(length(argmax_sim) < 1) {
       # argmax cannot be determined, probably due to NA values
@@ -57,7 +78,7 @@ with(senseasim, {
       max_sim           = max_sim,
       argmax_sim        = argmax_sim,
       argmax_sim_i      = argmax_sim_ind,
-      argmax_sim_names  = matrix(nrow = 1, ncol = 2, data = c( colnames(M1)[argmax_sim_ind[1,1]], colnames(M2)[argmax_sim_ind[1,2]]) )
+      argmax_sim_names  = matrix(nrow = 1, ncol = 2, data = c( rownames(SIM)[argmax_sim_ind[1,1]], colnames(SIM)[argmax_sim_ind[1,2]]) )
     ))
   }
 
