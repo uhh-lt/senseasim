@@ -10,7 +10,7 @@ with(sensevectors, {
     senseinventoryname = 'jbt_stanfordnewfine'
   )
 
-  .senseinventories <- list(
+  .senseinventories <- function() list(
     #
     jbt_stanfordnewfine = function(term, POS)
       jbt$get_JBT_senses(term, POS,
@@ -46,7 +46,7 @@ with(sensevectors, {
     R$v_shift <- R$v
 
     # get the sense lists
-    senseinventoryfun <- .senseinventories[[senseinventoryname]]
+    senseinventoryfun <- .senseinventories()[[senseinventoryname]]
     R$termSenseInventory <- senseinventoryfun(term, POS)
     R$nsenses <- length(R$termSenseInventory)
     R$status[[length(R$status)+1]] <- sprintf('found %d non-empty senses for term=\'%s#%s\'', R$nsenses, term, POS)
