@@ -67,12 +67,19 @@ with(vsm, {
     )
   )
 
-  .sensemodels <- function(){
-    return(list(
-      'adagram' = list(paste0(Sys.getenv(c('DATA_HOME')),'/adagram/clean_lemma_model_alpha_05.txt'), function(w) tolower(w)),
-      'autoextend' = list(paste0(Sys.getenv(c('DATA_HOME')),'/autoextend/lexemes.txt'), function(w) tolower(w))
-    ))
-  }
+  .sensemodels <- function() list(
+    adagram = list(
+      local_location = paste0(cache$data_dir(),'/adagram/clean_lemma_model_alpha_05.txt'),
+      transformer    = function(w) tolower(w),
+      unk = 'the'
+    ),
+    autoextend = list(
+      local_location = paste0(cache$data_dir(),'/autoextend/lexemes.txt'),
+      transformer = function(w) tolower(w),
+      unk = 'the'
+    )
+  )
+
 
   build_bigmatrix_from_txt <- function(filename, separator = ' ') {
     # get the filenames
