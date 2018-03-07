@@ -32,10 +32,9 @@ with(eval, {
     lapply(.eval_configs(), function(cfg) cfg$initfun())
   }
 
-  run <- function(inputfile = file.path(cache$data_dir(), 'sim-multilang', 'sim_bench_merged.tsv'), outputfile, samples = c(1,2,3,4,5)){
+  run <- function(inputfile = file.path(cache$data_dir(), 'sim-multilang', 'sim_bench_merged.tsv'), samples = c(1,2,3,4,5), outputfile = NULL, ccl = NULL){
     require(dplyr)
-    init()
-    benchmark <<- data.table::fread(inputfile, sep='\t', header=T, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
+    benchmark <- data.table::fread(inputfile, sep='\t', header=T, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
 
     # prepare test example indexes
     if(length(samples) > 1 || samples > 1){
@@ -49,60 +48,35 @@ with(eval, {
       message(sprintf('[%s-%d-%s]: using %d of %d sample indices: \'%s,...\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), length(ind), nrow(benchmark), paste(ind[1:min(length(ind), 10)], collapse = ',')))
     }
 
-    # run eval
-    scores <- lapply(ind, function(i) {
+    # this function will be applied to every index in `ind`
+    rowfun <- function(i) {
       row <- benchmark[i,]
-      df <- lapply(.eval_configs(), function(cfg) {
-        cbind(row, cfg$scorefun(row$word1, row$word2, row$pos1, row$pos2))
+      df <- lapply(names(.eval_configs()), function(cfgname) {
+        cfg <- .eval_configs()[[cfgname]]
+        cfg_df <- cfg$scorefun(row$word1, row$word2, row$pos1, row$pos2)
+        cfg_df$config <- cfgname
+        return(cbind(row, cfg_df))
       }) %>% bind_rows
       return(df)
-    }) %>% bind_rows
+    }
+
+    # run eval
+    tictoc::tic()
+    if(is.null(ccl)) { # run locally / single threaded in current session
+      init()
+      scores <- lapply(ind, rowfun) %>% bind_rows
+    } else { # run in parallel mode
+      scores <- cclDef$lapply.par(
+        X = ind,
+        fun = rowfun,
+        ccl = ccl,
+        exportitems = c('benchmark','rowfun','sensevectors', 'eval'),
+        exportitemsenvir = environment(),
+        initializationfun = function() { eval$init() }
+      ) %>% bind_rows
+    }
+    tictoc::toc()
+
     return(scores)
   }
-
-  # init_cluster <- function(cl, inputfile, outputfile) {
-  #   words <<- data.table::fread(inputfile, sep=' ', header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
-  #   parallel::clusterExport(cl, c('words','sensevectors'), envir = .GlobalEnv)
-  #   parallel::clusterExport(cl, c('outputfile'), envir = environment())
-  #
-  #   parallel::clusterEvalQ(cl, {
-  #     # initialization actions
-  #     local_outputfile <<- paste0(outputfile, Sys.getpid())
-  #     sensevectors$init()
-  #     message(sprintf('[%s-%d-%s] saving to \'%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), local_outputfile))
-  #   })
-  # }
-  #
-  # run_parallel <- function(inputfile, outputfile, cl = NULL) {
-  #   # measure computing time
-  #   tictoc::tic()
-  #
-  #   # if cluster is null create a cluster of n-1 cores of n beeing the system core number
-  #   if(is.null(cl)) {
-  #     cl <- cclDef$local(cores=parallel::detectCores()-1)
-  #   }
-  #   if(is.numeric(cl)){
-  #     if(cl < 1){
-  #       cl = parallel::detectCores()-1
-  #     }
-  #     cl <- cclDef$local(cores=cl)
-  #   }
-  #
-  #   init_cluster(cl, inputfile, outputfile)
-  #
-  #   # apply in parallel
-  #   r <- parallel::parLapply(cl, 1:nrow(words), function(i) {
-  #     term <- words[i,1]
-  #     POS <- words[i,2]
-  #     get_and_write_sensevectors(term, POS, local_outputfile)
-  #     return(T)
-  #   })
-  #
-  #   # shutdown cluster
-  #   message(sprintf('[%s-%d-%s] shutting down cluster.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S')))
-  #   parallel::stopCluster(cl)
-  #
-  #   tictoc::toc()
-  # }
-
 })

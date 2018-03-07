@@ -183,15 +183,7 @@ with(sensevectors, {
     tictoc::tic()
 
     # if cluster is null create a cluster of n-1 cores of n beeing the system core number
-    if(is.null(cl)) {
-      cl <- cclDef$local(cores=parallel::detectCores()-1)
-    }
-    if(is.numeric(cl)){
-      if(cl < 1){
-        cl = parallel::detectCores()-1
-      }
-      cl <- cclDef$local(cores=cl)
-    }
+    cl <- if(is.null(cl)) { cclDef$make.default() } else{ cclDef$make.default(cl) }
 
     init_cluster(cl, inputfile, outputfile)
 
