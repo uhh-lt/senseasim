@@ -12,7 +12,7 @@ parser$add_argument('-p', '--parallel', nargs=1, type='integer', default=1, help
 parser$add_argument('-i', '--input', nargs=1, type='character', default='-', help='Input file location [specify - for stdin, default %(default)s]', metavar='filename')
 parser$add_argument('-o', '--output', nargs=1, type='character', default='-', help='Output file location [specify - for stdout, default %(default)s]', metavar='filename')
 parser$add_argument('-m', '--vsmodel', type='character', help='VSM model', metavar='modelname')
-parser$add_argument('-s', '--sensemodel', type='character', help='JoBimText sense model', metavar='modelname')
+parser$add_argument('-s', '--sensemodel', type='character', help='Sense inventory model', metavar='sensemodel')
 parser$add_argument('-t', '--topn', type='integer', nargs=1, default=5, help='Use top n sense terms [default %(default)s]', metavar='number')
 parser$add_argument('-l', '--lambda', type='double', nargs=1, default=0.5, help='Shift the sense vectors by lambda into the direction of its base vector [default %(default)s]', metavar='number')
 parser$add_argument('--models', action='store_true', default='FALSE', help='Get more details of default models.')
@@ -52,7 +52,7 @@ if(args$run) {
     sensevectors$.defaults$vsm_model <- args$vsmodel
   }
   if(!is.null(args$sensemodel)){
-    sensevectors$.defaults$jbt_sense_api <- args$sensemodel
+    sensevectors$.defaults$senseinventoryname <- args$sensemodel
   }
   if(args$topn != sensevectors$.defaults$topn_sense_terms){
     sensevectors$.defaults$topn_sense_terms <- args$topn

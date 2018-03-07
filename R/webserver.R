@@ -43,11 +43,11 @@ function(res, term='vitamin', model=sensevectors$.defaults$vsm_model){
 #* @param POS The part of speech of the term (default: NN)
 #* @param RET which information to return (default: index)
 #* @param vsm_modelname The vector space model to use
-#* @param jbt_sense_api The jbt api to use
+#* @param senseinventoryname The inventory to use
 #* @param topn_sense_terms
 #* @param shift_lambda
 #* @get /sensevector
-function(res, term='vitamin', POS='NN', RET='index', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms = sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda){
+function(res, term='vitamin', POS='NN', RET='index', vsm_modelname = sensevectors$.defaults$vsm_model, senseinventoryname = sensevectors$.defaults$senseinventoryname, topn_sense_terms = sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda){
   # @ serializer contentType list(type="application/json")
   # json <- jsonlite::toJSON(list(
   #   index <- vec$index,
@@ -64,7 +64,7 @@ function(res, term='vitamin', POS='NN', RET='index', vsm_modelname = sensevector
 
   vsm$load_default_matrices(list(vsm_modelname))
 
-  vec <- sensevectors$get_sense_vectors(term, POS, vsm_modelname = vsm_modelname, jbt_sense_api = jbt_sense_api, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
+  vec <- sensevectors$get_sense_vectors(term, POS, vsm_modelname = vsm_modelname, senseinventoryname = senseinventoryname, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
   message('index')
   switch (RET,
     'status' = vec$status,
@@ -98,13 +98,13 @@ function(res, term='vitamin', POS='NN', RET='index', vsm_modelname = sensevector
 #* @param POS1
 #* @param POS2
 #* @param vsm_modelname The vector space model to use
-#* @param jbt_sense_api The jbt api to use
+#* @param senseinventoryname The inventory to use
 #* @param topn_sense_terms
 #* @param shift_lambda
 #* @param reduction tsne or pca, default: tsne
 #* @get /plotsenses
 #* @png
-function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda, reduction='tsne'){
+function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, senseinventoryname = sensevectors$.defaults$senseinventoryname, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda, reduction='tsne'){
 
   vsm$load_default_matrices(list(vsm_modelname))
 
@@ -116,7 +116,7 @@ function(term1='iron', term2='vitamin', POS1 = 'NN', POS2 = 'NN', vsm_modelname 
   }
 
   #: get the plot
-  p <- vis$plotsenses(term1, term2, POS1, POS2, vsm_modelname, jbt_sense_api, topn_sense_terms, shift_lambda, reduction)
+  p <- vis$plotsenses(term1, term2, POS1, POS2, vsm_modelname, senseinventoryname, topn_sense_terms, shift_lambda, reduction)
 
   #: return the plot
   print(p)

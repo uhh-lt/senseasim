@@ -6,10 +6,10 @@ with(senseasim, {
   #'
   #' score
   #'
-  score <- function(term1, term2, POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, jbt_sense_api = sensevectors$.defaults$jbt_sense_api, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda, simfun = senseasim$cos) {
+  score <- function(term1, term2, POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, senseinventoryname = sensevectors$.defaults$senseinventoryname, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda, simfun = senseasim$cos) {
 
-    R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1, vsm_modelname = vsm_modelname, jbt_sense_api = jbt_sense_api, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
-    R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2, vsm_modelname = vsm_modelname, jbt_sense_api = jbt_sense_api, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
+    R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1, vsm_modelname = vsm_modelname, senseinventoryname = senseinventoryname, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
+    R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2, vsm_modelname = vsm_modelname, senseinventoryname = senseinventoryname, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
     SIM <- sim.matrix(R1$v_shift, R2$v_shift, simfun = simfun)
     maxscore <- max.sim(SIM)
     return(list(

@@ -4,17 +4,37 @@ sensevectors <- new.env(parent = .GlobalEnv)
 with(sensevectors, {
 
   .defaults <- list(
-    jbt_sense_api = 'stanfordnew_fine',
     vsm_model = 'EN_100k_lsa',
     topn_sense_terms = 5,
-    shift_lambda = .5
+    shift_lambda = .5,
+    senseinventoryname = 'jbt_stanfordnewfine'
+  )
+
+  .senseinventories <- list(
+    #
+    jbt_stanfordnewfine = function(term, POS)
+      jbt$get_JBT_senses(term, POS,
+                         isas = F,
+                         modelname = 'stanfordnew_fine'),
+    #
+    sim500cluster_cw = function(term, POS)
+      wsi$induceby.simcluster(term,
+        modelname = .defaults$vsm_model,
+        topn.similar.terms = 500,
+        simfun = senseasim$cos,
+        simfun.name = 'cos',
+        simfun.issymmetric = T,
+        thresh = 0.66,
+        cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
+        cluster.fun.name = 'cw_nosingletons')$itemlists
+    #
   )
 
   init <- function() {
     vsm$load_default_matrices(c(.defaults$vsm_model))
   }
 
-  get_sense_vectors <- function(term, POS, vsm_modelname = .defaults$vsm_model, jbt_sense_api = .defaults$jbt_sense_api, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
+  get_sense_vectors <- function(term, POS, vsm_modelname = .defaults$vsm_model, senseinventoryname = .defaults$senseinventoryname, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
     # prepare the result object
     R <- newEmptyObject()
     R$params <- as.list(match.call())
@@ -25,10 +45,10 @@ with(sensevectors, {
     R$v <- matrix(NA, ncol = 1, nrow = ncol(model$M), dimnames = list(NULL, paste0(term,'#')))
     R$v_shift <- R$v
 
-    # get the jbt sense list
-    jb_sense_lists <- jbt$get_JBT_senses(term, POS, isas = F, modelname = jbt_sense_api)
-    R$termSenseInventory <- jb_sense_lists
-    R$nsenses <- length(jb_sense_lists)
+    # get the sense lists
+    senseinventoryfun <- .senseinventories[[senseinventoryname]]
+    R$termSenseInventory <- senseinventoryfun(term, POS)
+    R$nsenses <- length(R$termSenseInventory)
     R$status[[length(R$status)+1]] <- sprintf('found %d non-empty senses for term=\'%s#%s\'', R$nsenses, term, POS)
     message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
 
@@ -41,14 +61,14 @@ with(sensevectors, {
     R$index <- data.frame(mterm, stringsAsFactors = F)
 
     # get the sub-matrix which contains the term vectors of all terms within the topn of the sense lists
-    if(is.null(jb_sense_lists) | length(jb_sense_lists) < 1) {
+    if(is.null(R$termSenseInventory) | length(R$termSenseInventory) < 1) {
       # if sense inventory is empty make a warning
       R$status[[length(R$status)+1]] <- 'Attention: sense inventory is empty.'
       message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
     }
 
-    for(i in seq_along(jb_sense_lists)) {
-      list_of_jb_terms <- jb_sense_lists[[i]]
+    for(i in seq_along(R$termSenseInventory)) {
+      list_of_jb_terms <- R$termSenseInventory[[i]]
       sense_terms <- list_of_jb_terms[1:min(length(list_of_jb_terms), topn_sense_terms)]
       # get the correct term representation for the current matrix
       for(sense_term in sense_terms) {

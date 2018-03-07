@@ -18,7 +18,7 @@ with(eval, {
           POS1 = POS1,
           POS2 = POS2,
           vsm_modelname = sensevectors$.defaults$vsm_model,
-          jbt_sense_api = sensevectors$.defaults$jbt_sense_api,
+          senseinventoryname = sensevectors$.defaults$senseinventoryname,
           topn_sense_terms = sensevectors$.defaults$topn_sense_terms,
           shift_lambda = sensevectors$.defaults$shift_lambda,
           simfun = senseasim$cos
