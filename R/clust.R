@@ -1,6 +1,6 @@
 #'
 #'
-#' access jbt models cached data
+#' define some clustering algorithms
 #'
 #'
 
@@ -49,8 +49,10 @@ with(clust, {
 
   # Utility methods ----
   as.cluster.lists <- function(labels){
-    cluster_lists <- lapply(unique(labels), function(lbl) which(labels == lbl))
-    return(cluster_lists)
+    labels_ <- unique(labels)
+    clusterlists <- lapply(labels_, function(lbl) names(labels)[which(labels == lbl)])
+    names(clusterlists) <- labels_
+    return(clusterlists)
   }
 
   as.cluster.labels <- function(senselists){
@@ -66,10 +68,13 @@ with(clust, {
     return(labels)
   }
 
-  merge_singleton_clusters <- function(labels){
+  #'
+  #' merged singleton clusters
+  #'
+  merge_singleton_clusters <- function(labels, newlabel = 'singletons.merged'){
     quantities <- table(labels)
     labels_with_size_1 <- names(which(quantities == 1))
-    labels[which(labels %in% labels_with_size_1)] <- NA
+    labels[which(labels %in% labels_with_size_1)] <- newlabel
     return(labels)
   }
 
@@ -85,10 +90,10 @@ with(clust, {
   #' A[sample(1:25, 5)] <- 0 # make A sparse
   #' A <- A * t(A) * (1 - diag(5)) # make matrix symmetrical and fix diagonal
   #'
-  #' test: clust$chinese_whispers(twenty_nodes)
+  #' test: clust$cw(twenty_nodes)
   #'
   #' @return a vector containing a cluster id for each input node
-  chinese_whispers <- function(A, max_iter = 20, eps = 1e-5, remove_self_loops = T, allowsingletons = F){
+  cw <- function(A, max_iter = 20, eps = 1e-5, remove_self_loops = T, allowsingletons = F){
     # init
     assertthat::are_equal(ncol(A), nrow(A))
     N <- nrow(A)

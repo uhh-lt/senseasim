@@ -13,9 +13,9 @@ with(cache, {
   data_temp_dir <- function() Sys.getenv('DATA_TEMP', unset = dirname(tempdir()))
 
   #'
-  #' Helper function, get the case representation u(ppercase) or l(owercase) for each character in a string
+  #' Helper function, get the case representation U(ppercase) or l(owercase) for each character in a string
   #'
-  get_case_representation <- function(term) paste(mapply(function(c) if(c == toupper(c)) 'u' else 'l', strsplit(term,'')[[1]]), collapse = '')
+  get_case_representation <- function(term) paste(mapply(function(c) if(c == toupper(c)) 'U' else 'l', strsplit(term,'')[[1]]), collapse = '')
 
   get_filename <- function(term, POS, dirname, prefix = '', postfix = '.rds')
     file.path(dirname, paste0(prefix, tolower(term), '_', get_case_representation(term), '$', tolower(POS), '_', get_case_representation(POS), postfix))
