@@ -27,7 +27,7 @@ ENV DATA_TEMP /data/temp
 RUN set -ex \
       && alias sensevectors='Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/sensevectors' \
       && alias sensasim='Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/sensasim' \
-      && alias rds='Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/rds' \
+      && alias rds='/opt/project/bin/rds' \
       && alias tobigmatrix='Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/toBigMatrix.R'
 
 RUN set -ex \
