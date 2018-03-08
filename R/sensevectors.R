@@ -125,11 +125,10 @@ with(sensevectors, {
           s_shift <- (shift_lambda * v) + ((1-shift_lambda) * s)
         }
       }
-      colnames(s) <- colnames(s_shift) <- paste0(term, '#', paste0(sterms, collapse = ','))
+      colnames(s) <- colnames(s_shift) <- paste0(term, '#', i, ':', paste0(sterms, collapse = ','))
       R$v <- cbind(R$v, s)
       R$v_shift <- cbind(R$v_shift, s_shift)
     }
-
     return(R)
   }
 
