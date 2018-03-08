@@ -107,10 +107,9 @@ with(sensevectors, {
       if(length(sterms) <= 0) {
         R$status[[length(R$status)+1]] <- sprintf('No known sense terms for sense %d of \'%s %s\'. Producing NA vector.', i, term, POS)
         message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
-        s <- matrix(NA, ncol=1, nrow=ncol(model$M)) # create a NA valued matrix with one vector and the dim of M
-      } else {
-        s <- matrix(ncol=1, rowMeans(M[,sterms,drop=F]), byrow = T)
+        return(R)
       }
+      s <- matrix(ncol=1, rowMeans(M[,sterms,drop=F]), byrow = T)
       # now shift
       if(shift_lambda <= 0){
         # term vector has no influence
