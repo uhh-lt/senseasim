@@ -32,7 +32,7 @@ with(eval, {
     lapply(.eval_configs(), function(cfg) cfg$initfun())
   }
 
-  run <- function(inputfile = file.path(cache$data_dir(), 'sim-multilang', 'sim_bench_merged.tsv'), samples = c(1,2,3,4,5), outputfile = NULL, ccl = NULL){
+  run <- function(inputfile = file.path(cache$data_dir(), 'sim', 'sim_bench_merged.tsv'), samples = c(1,2,3,4,5), outputfile = NULL, ccl = NULL){
     require(dplyr)
     benchmark <- data.table::fread(inputfile, sep='\t', header=T, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
 
