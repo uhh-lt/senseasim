@@ -34,14 +34,14 @@ with(cclDef, {
   #' Apply parallelized function (simplified)
   #'
   #'
-  lapply.par <- function(X, fun, ccl = NULL, exportitems = c(), exportitemsenvir = .GlobalEnv, initializationfun = function(){}, finalizationfun = function(){}) {
+  lapply.par <- function(X, FUN, ccl = NULL, exportitems = c(), exportitemsenvir = .GlobalEnv, initializationfun = function(){}, finalizationfun = function(){}) {
     ccl <- cclDef$make.default(ccl)
     # export variables and run initialization procedures
-    parallel::clusterExport(ccl, c('X','fun', 'initializationfun', 'finalizationfun'), envir=environment())
+    parallel::clusterExport(ccl, c('X','FUN', 'initializationfun', 'finalizationfun'), envir=environment())
     parallel::clusterExport(ccl, exportitems, envir=exportitemsenvir)
     parallel::clusterEvalQ(ccl, { initializationfun() })
 
-    result <- parallel::parLapply(ccl, X, fun)
+    result <- parallel::parLapply(ccl, X, FUN)
 
     parallel::clusterEvalQ(ccl, { finalizationfun() })
     parallel::stopCluster(ccl)

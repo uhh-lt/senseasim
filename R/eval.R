@@ -68,7 +68,7 @@ with(eval, {
     } else { # run in parallel mode
       scores <- cclDef$lapply.par(
         X = ind,
-        fun = rowfun,
+        FUN = rowfun,
         ccl = ccl,
         exportitems = c('benchmark','rowfun','sensevectors', 'eval'),
         exportitemsenvir = environment(),

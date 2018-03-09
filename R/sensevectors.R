@@ -12,22 +12,34 @@ with(sensevectors, {
 
   .senseinventories <- function() list(
     #
-    jbt_stanfordnewfine = function(term, POS)
-      jbt$get_JBT_senses(term, POS,
-                         isas = F,
-                         modelname = 'stanfordnew_fine'),
+    jbt_stanfordnewfine = function(term, POS, modelname = NULL)
+      jbt$get_JBT_senses(
+        term, POS,
+        isas = F,
+        modelname = 'stanfordnew_fine'),
     #
-    sim500cluster_cw = function(term, POS)
+    sim500cluster_cw = function(term, POS = NULL, modelname)
       wsi$induceby.simcluster(term,
-        modelname = .defaults$vsm_model,
+        modelname = modelname,
         topn.similar.terms = 500,
         simfun = senseasim$cos,
         simfun.name = 'cos',
         simfun.issymmetric = T,
         thresh = 0.66,
         cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
-        cluster.fun.name = 'cw_nosingletons')$itemlists
+        cluster.fun.name = 'cw_nosingletons')$itemlists,
     #
+    sim200cluster_cw = function(term, POS = NULL, modelname)
+      wsi$induceby.simcluster(
+        term,
+        modelname = modelname,
+        topn.similar.terms = 200,
+        simfun = senseasim$cos,
+        simfun.name = 'cos',
+        simfun.issymmetric = T,
+        thresh = 0.72,
+        cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
+        cluster.fun.name = 'cw_nosingletons')$itemlists
   )
 
   init <- function() {
@@ -47,7 +59,7 @@ with(sensevectors, {
 
     # get the sense lists
     senseinventoryfun <- .senseinventories()[[senseinventoryname]]
-    R$termSenseInventory <- senseinventoryfun(term, POS)
+    R$termSenseInventory <- senseinventoryfun(term, POS, vsm_modelname)
     R$nsenses <- length(R$termSenseInventory)
     R$status[[length(R$status)+1]] <- sprintf('found %d non-empty senses for term=\'%s#%s\'', R$nsenses, term, POS)
     message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))

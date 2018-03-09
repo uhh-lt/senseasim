@@ -63,7 +63,7 @@ with(vsm, {
     ft_de = list(
       local_location = paste0(cache$data_dir(),'/fasttext/cc.de.300.vec.gz'),
       transformer    = function(w) w,
-      unk = 'UNKNOWN'
+      unk = 'unknown'
     )
   )
 
