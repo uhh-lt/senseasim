@@ -203,7 +203,7 @@ with(sensevectors, {
     # if cluster is null create a cluster of n-1 cores of n beeing the system core number
     cl <- if(is.null(cl)) { cclDef$make.default() } else{ cclDef$make.default(cl) }
 
-    outputfile <- paste0(outputfile, format(Sys.time(), '%m%d%H%M%S'))
+    outputfile <- paste0(outputfile, format(Sys.time(), '%Y%m%d%H%M%S'))
     init_cluster(cl, inputfile, outputfile)
 
     # apply in parallel

@@ -24,11 +24,12 @@ WORKDIR /opt/project
 ENV DATA_HOME /data
 ENV DATA_TEMP /data/temp
 
-RUN set -ex \
-      && alias sensevectors='Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/sensevectors' \
-      && alias sensasim='Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/sensasim' \
-      && alias rds='/opt/project/bin/rds' \
-      && alias tobigmatrix='Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/toBigMatrix.R'
+RUN ( \
+echo "alias sensevectors='Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/sensevectors'" && \
+echo "alias sensasim='Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/sensasim'" && \
+echo "alias rds='/opt/project/bin/rds'" && \
+echo "alias tobigmatrix='Rscript --vanilla --default-packages=methods,utils,stats /opt/project/bin/toBigMatrix.R'" \
+) >> $HOME/.bashrc
 
 RUN set -ex \
       && Rscript -e 'install.packages("devtools")' \
