@@ -113,22 +113,31 @@ with(vsm, {
       df <- data.table::fread(filename, sep=separator, header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
     }
 
-
     colnames(df) <- NULL # remove colnames
     tictoc::tic('Fixed missing rowname values.')
+    message(sprintf('[%s-%d-%s] Fixing missing values...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
     missing_names <- which(is.na(df[,1]) | is.null(df[,1]) | df[,1] == '') # first column is rownames, find missing values
     df[missing_names, 1] <- sapply(missing_names, function(ri) paste0('missing_row_',ri)) # fix missing values
     message(sprintf('[%s-%d-%s] Removed %d vectors with missing rownames.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), length(missing_names)))
     tictoc::toc()
+
+    tictoc::tic('Fixed unique rownames.')
+    message(sprintf('[%s-%d-%s] Fixing unique rownames...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+    rows_unique <- which(!duplicated(df[,1]))
+    message(sprintf('[%s-%d-%s] Removing %d vectors with non-unique rownames...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), nrow(df) - length(rows_unique)))
+    df <- df[rows_unique,]
+    tictoc::toc()
+
     rownames(df) <- df[,1] # first column is rownames
     df <- df[,-1] # remove first column
     tictoc::toc()
+
     message(sprintf('[%s-%d-%s] Data size: %s', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), format(object.size(df), units = "auto")))
     message('Memory usage:')
     print.table(gc(reset=T)) # show some memory usage
-    tictoc::tic('Finished converting.')
 
-    message(sprintf('[%s-%d-%s] Converting...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+    tictoc::tic('Finished converting.')
+    message(sprintf('[%s-%d-%s] Converting to bigmatrix...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
     require(bigmemory); options(bigmemory.allow.dimnames=TRUE)
     bm <- bigmemory::as.big.matrix(df, backingfile = bckngfile, backingpath = bckngpath, descriptorfile = bckngdesc, shared = T)
     tictoc::toc()
