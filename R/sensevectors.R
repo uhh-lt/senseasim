@@ -12,14 +12,15 @@ with(sensevectors, {
 
   .senseinventories <- function() list(
     #
-    jbt_stanfordnewfine = function(term, POS, modelname = NULL)
+    jbt_stanfordnewfine = function(term, POS, modelname = NA)
       jbt$get_JBT_senses(
         term, POS,
         isas = F,
         modelname = 'stanfordnew_fine'),
     #
-    sim500cluster_cw = function(term, POS = NULL, modelname)
-      wsi$induceby.simcluster(term,
+    sim500cluster_cw = function(term, POS = NA, modelname)
+      wsi$induceby.simcluster(
+        term,
         modelname = modelname,
         topn.similar.terms = 500,
         simfun = senseasim$cos,
@@ -29,7 +30,7 @@ with(sensevectors, {
         cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
         cluster.fun.name = 'cw_nosingletons')$itemlists,
     #
-    sim200cluster_cw = function(term, POS = NULL, modelname)
+    sim200cluster_cw = function(term, POS = NA, modelname)
       wsi$induceby.simcluster(
         term,
         modelname = modelname,
