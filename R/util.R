@@ -22,7 +22,7 @@ with(util, {
     if(stringi::stri_isempty(api) || stringi::stri_isempty(recepient)){
       return('Missing environment variables! (please set $MAILGUN_API and $MAILGUN_RECEPIENT)')
     }
-    r <- curl_fetch_memory(
+    r <- curl::curl_fetch_memory(
       api,
       curl::handle_setform(
         curl::new_handle(),
