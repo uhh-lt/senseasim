@@ -16,8 +16,7 @@ with(util, {
     content
   )
 
-
-  sendmessage <- function(content = ' ') {
+  sendmessage <- function(subject = ' ', content = ' ') {
     api <- Sys.getenv('MAILGUN_API')
     recepient <- Sys.getenv('MAILGUN_RECEPIENT')
     if(stringi::stri_isempty(api) || stringi::stri_isempty(recepient)){
@@ -29,7 +28,7 @@ with(util, {
         curl::new_handle(),
         from='The Computer <computer@computerwork.org>',
         to=recepient,
-        subject = 'Computation Finished! <EOM>',
+        subject = subject,
         text = content
       )
     )
