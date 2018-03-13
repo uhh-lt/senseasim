@@ -209,6 +209,11 @@ with(vsm, {
   get_vector <- function(term, modelname, .as_column = F) {
     model <- .models_loaded[[modelname]]
     mterm <- model$transform(term)
+    v <- .get_vector(mterm, model)
+    return(v)
+  }
+
+  .get_vector <- function(mterm, model, .as_column = F) {
     if(length(mterm$idx) > 0){
       v <- model$M[mterm$idx,]
       v <- matrix(nrow = 1, data = v, dimnames = list(mterm$mterm), byrow = T)
@@ -229,6 +234,22 @@ with(vsm, {
     }else{
       return(model$unk)
     }
+  }
+
+  similarity <- function(term1, term2, modelname, simfun = senseasim$cos) {
+    model <- .models_loaded[[modelname]]
+    mterm1 <- model$transform(term1)
+    mterm2 <- model$transform(term2)
+    v1 <- .get_vector(mterm1, model)
+    v2 <- .get_vector(mterm2, model)
+    sim <- simfun(v1,v2)
+    return(list(
+      t1 = mterm1$mterm,
+      t2 = mterm2$mterm,
+      t1.is.unk = mterm1$idx == model$unk$idx,
+      t2.is.unk = mterm2$idx == model$unk$idx,
+      score = sim
+    ))
   }
 
 })
