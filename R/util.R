@@ -12,7 +12,7 @@ with(util, {
     '[%s-%d-%s] %s',
     gsub('\\..*$', '', Sys.info()[['nodename']]),
     Sys.getpid(),
-    format(Sys.time(), "%m%d-%H%M%S"),
+    format(Sys.time(), "%YY%m%d-%H%M%S"),
     content
   )
 
