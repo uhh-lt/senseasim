@@ -248,7 +248,7 @@ with(vsm, {
       t2 = mterm2$mterm,
       t1.is.unk = mterm1$idx == model$unk$idx,
       t2.is.unk = mterm2$idx == model$unk$idx,
-      score = sim
+      sim = sim
     ))
   }
 
