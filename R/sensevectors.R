@@ -27,11 +27,24 @@ with(sensevectors, {
         simfun.name = 'cos',
         simfun.issymmetric = T,
         thresh = 0.66,
-        minsize = 5,
+        minsize = 0,
         cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
         cluster.fun.name = 'cw_nosingletons')$itemlists,
     #
     sim200cluster_cw = function(term, POS = NA, modelname)
+      wsi$induceby.simcluster(
+        term,
+        modelname = modelname,
+        topn.similar.terms = 200,
+        simfun = senseasim$cos,
+        simfun.name = 'cos',
+        simfun.issymmetric = T,
+        thresh = 0.72,
+        minsize = 0,
+        cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
+        cluster.fun.name = 'cw_nosingletons')$itemlists,
+    #
+    sim200cluster_cw_minsize5 = function(term, POS = NA, modelname)
       wsi$induceby.simcluster(
         term,
         modelname = modelname,
