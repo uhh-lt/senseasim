@@ -12,6 +12,7 @@ with(senseasim, {
     R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2, vsm_modelname = vsm_modelname, senseinventoryname = senseinventoryname, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
     SIM <- sim.matrix(R1$v_shift, R2$v_shift, simfun = simfun)
     maxscore <- max.sim(SIM)
+
     return(list(
       t1_info = R1,
       t2_info = R2,
