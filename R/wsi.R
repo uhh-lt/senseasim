@@ -75,7 +75,7 @@ with(wsi, {
   #'
   #' induce senses by clustering the similarity matrix
   #'
-  induceby.simcluster <- function(term, modelname, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+  induceby.simcluster <- function(term, modelname, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
     model <- vsm$.models_loaded[[modelname]]
     mterm <- model$transform(term)
     fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimcluster__', modelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
@@ -91,6 +91,9 @@ with(wsi, {
       result <- list(labels = labels, itemlists = aslists)
       return(result)
     })
+    if(!is.na(minsize) | is.null(minsize)){
+      result$itemlists <- Filter(function(l) length(l) >= minsize, result$itemlists)
+    }
     return(result)
   }
 

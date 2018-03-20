@@ -27,6 +27,7 @@ with(sensevectors, {
         simfun.name = 'cos',
         simfun.issymmetric = T,
         thresh = 0.66,
+        minsize = 5,
         cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
         cluster.fun.name = 'cw_nosingletons')$itemlists,
     #
@@ -39,6 +40,7 @@ with(sensevectors, {
         simfun.name = 'cos',
         simfun.issymmetric = T,
         thresh = 0.72,
+        minsize = 5,
         cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
         cluster.fun.name = 'cw_nosingletons')$itemlists
   )
