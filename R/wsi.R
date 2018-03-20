@@ -91,7 +91,7 @@ with(wsi, {
       result <- list(labels = labels, itemlists = aslists)
       return(result)
     })
-    if(!is.na(minsize) | is.null(minsize)){
+    if(is.numeric(minsize) & minsize > 1){
       result$itemlists <- Filter(function(l) length(l) >= minsize, result$itemlists)
     }
     return(result)

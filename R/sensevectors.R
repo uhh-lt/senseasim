@@ -54,8 +54,8 @@ with(sensevectors, {
         simfun.issymmetric = T,
         thresh = 0.72,
         minsize = 5,
-        cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
-        cluster.fun.name = 'cw_nosingletons')$itemlists
+        cluster.fun = function(X) { clust$cw(X, allowsingletons = T) },
+        cluster.fun.name = 'cw_singletons')$itemlists
   )
 
   init <- function() {
