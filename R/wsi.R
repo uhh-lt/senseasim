@@ -15,11 +15,19 @@ with(wsi, {
   vs.similarities <- function(term, modelname, simfun = senseasim$cos, simfun.name = 'cos') {
     message(sprintf('[%s-%d-%s]: Preparing similarity values for term \'%s\' and matrix \'%s\'. ', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), term, modelname))
     model <- vsm$.models_loaded[[modelname]]
-    mterm <- model$transform(term)
-    fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', modelname, '__', simfun.name, '__'))
+    if(is.integer(term)) {
+      mterm <- model$vocab[[term]]
+      idx <- term
+    } else {
+      mterm <- model$transform(term)
+      idx <- mterm$idx
+      mterm <- mterm$mterm
+    }
+
+    fname <- cache$get_filename(mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', modelname, '__', simfun.name, '__'))
     sim <- cache$load(filename = fname, loadfun = function() {
       # get top n most similar words in terms of
-      v <- model$M[mterm$idx,]
+      v <- model$M[idx,]
       sim <- sapply(seq_len(nrow(model$M)), function(i) simfun(model$M[i,], v))
       # free some memory
       rm(v)
@@ -70,6 +78,49 @@ with(wsi, {
       return(SIM)
     })
     return(SIM)
+  }
+
+  #'
+  #' get a similarity graph based on transitivity
+  #'
+  similarity.graph.transitive <- function(term, modelname, n = 200, m = 50, simfun = senseasim$cos, simfun.name = 'cos'){
+    model <- vsm$.models_loaded[[modelname]]
+    n <- min(n, nrow(model$M))
+    m <- min(m, nrow(model$M))
+
+    mterm <- model$transform(term)
+    util$message(sprintf('Preparing similarity graph of top %s most similar terms for term \'%s\' and matrix \'%s\' and expand by the top %s most similar terms.', n, term, modelname, m))
+    fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('simgraphtrans__', modelname, '__', simfun.name,  '__n', n, '__m', m, '__'))
+
+    A <- cache$load(filename = fname, loadfun = function() {
+      # get n most simialar terms to mterm
+      sim1 <- wsi$vs.similarities(mterm$idx, modelname, simfun = simfun, simfun.name = simfun.name)
+      sim1 <- sim1[1:n,]
+
+      # for each similar word compute top m transitive similarities
+      simtrans <- lapply( seq_len(n), function(i) wsi$vs.similarities(sim1[i,]$idx, modelname, simfun = simfun, simfun.name = simfun.name)[1:m,] )
+
+      # prepare adjacency matrix, measure intersection of elements in transitive sims
+      # TODO: try different values, e.g. average cosine? cosine of average vector?
+      A <- matrix(0, nrow = n, ncol =n, dimnames = list(rownames(sim1), rownames(sim1)))
+      for(i in seq_len(n)){
+        sim_i <- simtrans[[i]]$idx
+        for(j in seq_len(n)){
+          if(j <= i) {
+            if(i == j)
+              A[i,j] <- length(sim_i)
+            else
+              A[i,j] <- A[j,i]
+            next
+          }
+          sim_j <- simtrans[[j]]$idx
+          sim_ij <- intersect(sim_i, sim_j)
+          A[i,j] <- length(sim_ij)
+        }
+      }
+      return(A)
+    })
+    return(A)
   }
 
   #'
