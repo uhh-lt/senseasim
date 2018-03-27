@@ -209,7 +209,7 @@ with(vsm, {
     newmodel <- newEmptyObject()
     #require(bigmemory); options(bigmemory.allow.dimnames = TRUE)
     newmodel$M <- bigmemory::attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc))
-    newmodel$vocab <- readLines(gsub('[.]desc$', 'rownames', fdesc))
+    newmodel$vocab <- readLines(gsub('[.]desc$', '.rownames', fdesc))
     assertthat::are_equal(nrow(newmodel$M), length(newmodel$vocab))
     newmodel$name <- modelname
     newmodel$unk <- list(mterm = models[[modelname]]$unk, idx = which(newmodel$vocab == models[[modelname]]$unk))
