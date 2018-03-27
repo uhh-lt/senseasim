@@ -86,18 +86,20 @@ with(vsm, {
     bckngpath <- dirname(filename)
     bckngfile <- paste0(basename(filename), '.bin')
     bckngdesc <- paste0(bckngfile, '.desc')
+    bckngrownames <- file.path(bckngpath, paste0(bckngfile, '.rownames'))
+
 
     message(sprintf('[%s-%d-%s] Trying to convert Vector Space Matrix: \n  input: \'%s\' \n  path:  \'%s\' \n  bin:   \'%s\'  \n  desc:  \'%s\' ',
                     gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"),
                     filename, bckngpath, bckngfile, bckngdesc))
 
-    if(!file.exists(filename)) {
-      message(sprintf('[%s-%d-%s] Input file does not exist. Aborting.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
-      return(F)
+    if(file.exists(file.path(bckngpath, bckngdesc))) {
+      util$message('Descriptor file exists. Skipping.')
+      return(T)
     }
 
-    if(file.exists(file.path(bckngpath, bckngdesc))) {
-      message(sprintf('[%s-%d-%s] descriptor file exists. Aborting.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+    if(!file.exists(filename)) {
+      util$message('Input file does not exist. Aborting.')
       return(F)
     }
 
@@ -116,7 +118,7 @@ with(vsm, {
     colnames(df) <- NULL # remove colnames
     tictoc::tic('Fixed missing rowname values.')
     message(sprintf('[%s-%d-%s] Fixing missing values...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
-    missing_names <- which(is.na(df[,1]) | is.null(df[,1]) | df[,1] == '') # first column is rownames, find missing values
+    missing_names <- which(is.na(df[,1]) | is.null(df[,1]) | df[,1] == '') # first column is vocabulary, find missing values
     df[missing_names, 1] <- sapply(missing_names, function(ri) paste0('missing_row_',ri)) # fix missing values
     message(sprintf('[%s-%d-%s] Removed %d vectors with missing rownames.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), length(missing_names)))
     tictoc::toc()
@@ -128,8 +130,10 @@ with(vsm, {
     df <- df[rows_unique,]
     tictoc::toc()
 
-    rownames(df) <- df[,1] # first column is rownames
+    vocab <- df[,1] # first column is vocabulary
     df <- df[,-1] # remove first column
+    rownames(df) <- NULL
+
     tictoc::toc()
 
     message(sprintf('[%s-%d-%s] Data size: %s', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), format(object.size(df), units = "auto")))
@@ -138,9 +142,15 @@ with(vsm, {
 
     tictoc::tic('Finished converting.')
     message(sprintf('[%s-%d-%s] Converting to bigmatrix...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
-    require(bigmemory); options(bigmemory.allow.dimnames=TRUE)
-    bm <- bigmemory::as.big.matrix(df, backingfile = bckngfile, backingpath = bckngpath, descriptorfile = bckngdesc, shared = T)
+    #require(bigmemory); options(bigmemory.allow.dimnames=TRUE)
+    m <- as.matrix(df)
+    bm <- bigmemory::as.big.matrix(m, backingfile = bckngfile, backingpath = bckngpath, descriptorfile = bckngdesc, shared = T)
+    # save vocabulary file
+    writeLines(vocab, bckngrownames)
     tictoc::toc()
+
+    # make some assertions
+    assertthat::are_equal(length(vocab), nrow(bm))
 
     # free memory
     rm(df)
@@ -186,16 +196,19 @@ with(vsm, {
     }
 
     if(!file.exists(fdesc)) {
-      message(sprintf('[%s-%d-%s] loading Vector Space Matrix from \'%s\' failed, file does not exists. \nDo you need to run \'toBigMatrix.R\'?', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), fdesc))
-      return(F)
+      if(!build_bigmatrix_from_txt(models[[modelname]]$local_location)){
+        util$message(sprintf('Loading Vector Space Matrix from \'%s\' failed, file does not exists.', fdesc))
+        return(F)
+      }
     }
 
     # else read vector space matrix as bigmatrix
     message(sprintf('[%s-%d-%s] loading Vector Space Matrix \'%s\'', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), modelname))
     newmodel <- newEmptyObject()
-    require(bigmemory); options(bigmemory.allow.dimnames = TRUE)
-    newmodel$M <- bigmemory::attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc), bigmemory.allow.dimnames = TRUE)
-    newmodel$vocab <- rownames(newmodel$M)
+    #require(bigmemory); options(bigmemory.allow.dimnames = TRUE)
+    newmodel$M <- bigmemory::attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc))
+    newmodel$vocab <- readLines(gsub('[.]desc$', 'rownames', fdesc))
+    assertthat::are_equal(nrow(newmodel$M), length(newmodel$vocab))
     newmodel$name <- modelname
     newmodel$unk <- list(mterm = models[[modelname]]$unk, idx = which(newmodel$vocab == models[[modelname]]$unk))
     newmodel$transform <- function(term) { get_vocab_term(term, models[[modelname]]$transformer, newmodel) }
