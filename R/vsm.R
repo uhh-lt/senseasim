@@ -157,6 +157,8 @@ with(vsm, {
     message('Memory usage:')
     print.table(gc(reset=T)) # show some memory usage
     tictoc::toc()
+
+    return(T)
   }
 
 
