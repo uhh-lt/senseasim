@@ -214,8 +214,8 @@ with(vsm, {
     newmodel$name <- modelname
     newmodel$unk <- list(mterm = models[[modelname]]$unk, idx = which(newmodel$vocab == models[[modelname]]$unk))
     newmodel$transform <- function(term) { get_vocab_term(term, models[[modelname]]$transformer, newmodel) }
-    rownames(newmodel$M) <- NULL
-    colnames(newmodel$M) <- NULL
+    # rownames(newmodel$M) <- NULL
+    # colnames(newmodel$M) <- NULL
     add_to_loaded_models(newmodel)
 
     return(T)
