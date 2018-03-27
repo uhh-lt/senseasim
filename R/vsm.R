@@ -142,7 +142,6 @@ with(vsm, {
 
     tictoc::tic('Finished converting.')
     message(sprintf('[%s-%d-%s] Converting to bigmatrix...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
-    #require(bigmemory); options(bigmemory.allow.dimnames=TRUE)
     m <- as.matrix(df)
     bm <- bigmemory::as.big.matrix(m, backingfile = bckngfile, backingpath = bckngpath, descriptorfile = bckngdesc, shared = T)
     # save vocabulary file
@@ -207,15 +206,12 @@ with(vsm, {
     # else read vector space matrix as bigmatrix
     message(sprintf('[%s-%d-%s] loading Vector Space Matrix \'%s\'', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), modelname))
     newmodel <- newEmptyObject()
-    #require(bigmemory); options(bigmemory.allow.dimnames = TRUE)
     newmodel$M <- bigmemory::attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc))
     newmodel$vocab <- readLines(gsub('[.]desc$', '.rownames', fdesc))
     assertthat::are_equal(nrow(newmodel$M), length(newmodel$vocab))
     newmodel$name <- modelname
     newmodel$unk <- list(mterm = models[[modelname]]$unk, idx = which(newmodel$vocab == models[[modelname]]$unk))
     newmodel$transform <- function(term) { get_vocab_term(term, models[[modelname]]$transformer, newmodel) }
-    # rownames(newmodel$M) <- NULL
-    # colnames(newmodel$M) <- NULL
     add_to_loaded_models(newmodel)
 
     return(T)
