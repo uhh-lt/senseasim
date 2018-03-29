@@ -56,7 +56,7 @@ with(jbt, {
 
     # get from temp dir if existent
     fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsimapi__', modelname, '__'))
-    js_doc <- cache$load(filename = fname, loadfun = function() {
+    js_doc <- cache$load(filename = fname, computefun = function() {
       url <- sprintf(model_template, term, jbtPOS)
       get_json_from_url(url)
     })

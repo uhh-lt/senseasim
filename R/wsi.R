@@ -25,7 +25,7 @@ with(wsi, {
     }
 
     fname <- cache$get_filename(mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', modelname, '__', simfun.name, '__'))
-    sim <- cache$load(filename = fname, loadfun = function() {
+    sim <- cache$load(filename = fname, computefun = function() {
       # get top n most similar words in terms of
       v <- model$M[idx,]
       sim <- sapply(seq_len(nrow(model$M)), function(i) simfun(model$M[i,], v))
@@ -61,7 +61,7 @@ with(wsi, {
     message(sprintf('[%s-%d-%s]: Preparing similarity matrix of top %s most similar terms for term \'%s\' and matrix \'%s\'. ', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), n, identifier, modelname))
 
     fname <- cache$get_filename(identifier, '', dirname = cache$data_temp_dir(), prefix = paste0('simmat__', modelname, '__', simfun.name,  '__n', n, '__'))
-    SIM <- cache$load(filename = fname, loadfun = function() {
+    SIM <- cache$load(filename = fname, computefun = function() {
       if(simfun.issymmetric) {
         i <- seq_len(n-1)
         # compute only lower triangular matrix
@@ -92,7 +92,7 @@ with(wsi, {
     util$message(sprintf('Preparing similarity graph of top %s most similar terms for term \'%s\' and matrix \'%s\' and expand by the top %s most similar terms.', n, term, modelname, m))
     fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('simgraphtrans__', modelname, '__', simfun.name,  '__n', n, '__m', m, '__'))
 
-    A <- cache$load(filename = fname, loadfun = function() {
+    A <- cache$load(filename = fname, computefun = function() {
       # get n most simialar terms to mterm
       sim1 <- wsi$vs.similarities(mterm$idx, modelname, simfun = simfun, simfun.name = simfun.name)
       sim1 <- sim1[1:n,]
@@ -130,7 +130,7 @@ with(wsi, {
     model <- vsm$.models_loaded[[modelname]]
     mterm <- model$transform(term)
     fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimcluster__', modelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
-    result <- cache$load(filename = fname, loadfun = function() {
+    result <- cache$load(filename = fname, computefun = function() {
       sims <- vs.similarities(mterm$mterm, modelname, simfun = simfun, simfun.name = simfun.name)
       SIM <- vs.similarity.matrix(sims$idx, modelname, n = topn.similar.terms, identifier = mterm$mterm, simfun = simfun, simfun.name = simfun.name, simfun.issymmetric = simfun.issymmetric)
       # SIM is already pruned to top n but term is still in there, so remove it (and it should be the very most similar term!)

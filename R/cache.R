@@ -20,21 +20,41 @@ with(cache, {
   get_filename <- function(term, POS, dirname, prefix = '', postfix = '.rds')
     file.path(dirname, paste0(prefix, tolower(term), '_', get_case_representation(term), '$', tolower(POS), '_', get_case_representation(POS), postfix))
 
-  load <- function(filename, loadfun){
-    if (file.exists(filename)) {
+  load <- function(filename, computefun, save.null = T){
+    if (!file.exists(filename)) {
+      # compute and save
+      result <- .load.locked(filename, computefun, save.null)
+    } else {
       # load
-      message(sprintf('[%s-%d-%s] loading \'%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), filename))
+      util$message(sprintf('loading \'%s\'.', filename))
       result <- readRDS(filename)
-      return(result)
-    }
-    # else
-    result <- loadfun()
-    if(!is.null(result)){
-      message(sprintf('[%s-%d-%s] saving result to \'%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), filename))
-      saveRDS(result, file = filename)
     }
     return(result)
   }
+
+  .load.locked <-  function(filename, computefun, save.null = T) {
+    # compute the result and save it. This must not be done in parallel!
+    lock__ = flock::lock(paste0(filename,'.lock'));
+    if(!file.exists(filename)){
+      result <- computefun()
+      if(is.null(result)) {
+        if(save.null) {
+          util$message(sprintf('Saving result to \'%s\'.', filename))
+          saveRDS(result, file = filename)
+        }
+      }else{
+        util$message(sprintf('Saving result to \'%s\'.', filename))
+        saveRDS(result, file = filename)
+      }
+    } else {
+      # load
+      util$message(sprintf('loading \'%s\'.', filename))
+      result <- readRDS(filename)
+    }
+    flock::unlock(lock__)
+    return(result)
+  }
+
 
 }) # end with(...)
 

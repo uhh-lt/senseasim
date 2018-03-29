@@ -178,13 +178,13 @@ with(sensevectors, {
       f <- stdout()
     }
     # lock
-    # lockfile <- if(is.character(f)) paste0(f, '.lock') else '~/stdout.lock'
-    # lck = flock::lock(lockfile)
+    lockfile <- if(is.character(f)) paste0(f, '.lock') else '~/stdout.lock'
+    lck = flock::lock(lockfile)
     for(name in colnames(vectors)){
       cat(name, paste(vectors[,name], collapse=' '), '\n', file = f, fill = FALSE, append=TRUE)
     }
     # release lock
-    # flock::unlock(lck)
+    flock::unlock(lck)
   }
 
   get_and_write_sensevectors <- function(term, POS, fout) {
