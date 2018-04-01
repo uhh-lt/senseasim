@@ -87,7 +87,8 @@ with(vsm, {
     bckngfile <- paste0(basename(filename), '.bin')
     bckngdesc <- paste0(bckngfile, '.desc')
     bckngrownames <- file.path(bckngpath, paste0(bckngfile, '.rownames'))
-
+    lockfile <- file.path(bckngpath, paste0(bckngfile, '.lock'))
+    lock__ <- flock::lock(lockfile)
 
     message(sprintf('[%s-%d-%s] Trying to convert Vector Space Matrix: \n  input: \'%s\' \n  path:  \'%s\' \n  bin:   \'%s\'  \n  desc:  \'%s\' ',
                     gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"),
@@ -95,11 +96,13 @@ with(vsm, {
 
     if(file.exists(file.path(bckngpath, bckngdesc))) {
       util$message('Descriptor file exists. Skipping.')
+      flock::unlock(lock__)
       return(T)
     }
 
     if(!file.exists(filename)) {
       util$message('Input file does not exist. Aborting.')
+      flock::unlock(lock__)
       return(F)
     }
 
@@ -157,6 +160,7 @@ with(vsm, {
     print.table(gc(reset=T)) # show some memory usage
     tictoc::toc()
 
+    flock::unlock(lock__)
     return(T)
   }
 
