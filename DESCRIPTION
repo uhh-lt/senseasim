@@ -1,7 +1,7 @@
 Package: senseasim
 Type: Package
 Title: Get sense vectors and similarities
-Version: 0.0.2
+Version: 0.0.3
 Author: Steffen Remus
 Maintainer: Steffen Remus <remus@informatik.uni-hamburg.de>
 Description: Description needs to be written
