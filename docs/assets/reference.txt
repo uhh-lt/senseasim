@@ -1,0 +1,9 @@
+@inproceedings{remusetal:2018:lrec,
+  author      = {Remus, Steffen and Biemann, Chris},
+  title       = {Retrofitting Word Representations for Unsupervised Sense Aware Word Similarities},
+  booktitle   = {LREC '18: Proceedings of LREC 2018},
+  year        = {2018},
+  address     = {Miyazaki, Japan},
+  pages       = {1--5},
+  series      = {LREC}
+}
