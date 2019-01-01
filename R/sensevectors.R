@@ -7,16 +7,18 @@ with(sensevectors, {
     vsm_model = 'EN_100k_lsa',
     topn_sense_terms = 5,
     shift_lambda = .5,
-    senseinventoryname = 'jbt_stanfordnewfine'
+    senseinventoryname = 'jbt_stanfordnewfine_en'
   )
 
   .senseinventories <- function() list(
     #
-    jbt_stanfordnewfine = function(term, POS, modelname = NA)
+    jbt_stanfordnewfine_en = function(term, POS, modelname = NA)
       jbt$get_JBT_senses(
         term, POS,
-        isas = F,
-        modelname = 'stanfordnew_fine'),
+        modelname = 'en_jbt_stanfordNew',
+        finer = T,
+        isas = F
+        ),
     #
     sim500cluster_cw = function(term, POS = NA, modelname)
       wsi$induceby.simcluster(

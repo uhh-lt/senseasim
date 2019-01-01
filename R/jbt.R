@@ -8,13 +8,57 @@ jbt <- new.env(parent = .GlobalEnv)
 
 with(jbt, {
 
-  .sim_models = list(
-    stanfordnew = 'http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/stanfordNew/jo/similar/%s%%23%s?numberOfEntries=1000&format=json'
-  )
+  .sim_urlpattern='http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/${model}/jo/similar/${term}%23${pos}?numberOfEntries=1000&format=json'
+  .sense_urlpattern='http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/${model}/jo/senses/${term}%23${pos}&format=json&sensetype=CW'
+  .sense_fine_urlpattern='http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/${model}/jo/senses/${term}%23${pos}?format=json&sensetype=CW-finer'
 
-  .sense_models = list(
-    stanfordnew_fine = 'http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/stanfordNew/jo/senses/%s%%23%s?format=json&sensetype=CW-finer',
-    stanfordnew_broad = 'http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/stanfordNew/jo/senses/%s%%23%s?&format=json&sensetype=CW'
+  .get_jbt_url = function(pattern, model, term, pos)
+    return(stringr::str_interp(pattern))
+
+  #  "ar" "de" "en" "es" "fa" "fr" "it" "nl" "pt" "ru" "sv" "zh"
+
+  .get_best_jbtmodel_for_lang <- function(lang) {
+    matched_models <- grep('^bn_', names(jbt$.jbt_models), value=T)
+    if(length(matched_models) > 0){
+      return(matched_models[[1]])
+    }
+    return(NULL)
+  }
+
+  .jbt_models <- list(
+    en_jbt_stanfordNew = 'stanfordNew',
+    en_jbt_stanfordContext = 'stanfordContext',
+    en_jbt_wikipediaStanford = 'wikipediaStanford',
+    en_jbt_trigram = 'trigram',
+    en_jbt_medlineTrigram = 'medlineTrigram',
+    en_jbt_medlineParsed = 'medlineParsed',
+    en_jbt_medlineTrigramMwe = 'medlineTrigramMwe',
+    en_jbt_superfamilyBigram = 'superfamilyBigram',
+    en_jbt_superfamilyTrigram = 'superfamilyTrigram',
+    en_jbt_pfamBigram = 'pfamBigram',
+    en_jbt_pfamTrigram = 'pfamTrigram',
+    en_jbt_reviewsTrigram = 'reviewsTrigram',
+    en_jbt_twitter2012Bigram = 'twitter2012Bigram',
+    en_jbt_google = 'google',
+    en_jbt_stanford = 'stanford',
+    en_jbt_google1520 = 'google1520',
+    en_jbt_wikipediaTrigram = 'wikipediaTrigram',
+    de_jbt_germanParsedLemma = 'germanParsedLemma',
+    de_jbt_germanTrigram = 'germanTrigram',
+    de_jbt_germanTrigramMwe = 'germanTrigramMwe',
+    de_jbt_germanEducrawl = 'germanEducrawl',
+    de_jbt_twitterDETrigram = 'twitterDETrigram',
+    es_jbt_spanishTrigram = 'spanishTrigram',
+    fr_jbt_frenchTrigram = 'frenchTrigram',
+    ar_jbt_arabicTrigram = 'arabicTrigram',
+    bn_jbt_bengaliBigram = 'bengaliBigram',
+    he_jbt_hebrewTrigram = 'hebrewTrigram',
+    hi_jbt_hindiBigram = 'hindiBigram',
+    hi_jbt_hindiTrigram = 'hindiTrigram',
+    nl_jbt_dutchTrigram = 'dutchTrigram',
+    ru_jbt_russianTrigram = 'russianTrigram',
+    sv_jbt_swedishTrigramMwe = 'swedishTrigramMwe',
+    tr_jbt_turkishTrigram = 'turkishTrigram'
   )
 
   #'
@@ -50,14 +94,14 @@ with(jbt, {
   #'
   #'
   #'
-  get_JBT_similarities <- function(term, POS = 'N', model_template = .sim_models[[1]], modelname = names(.sim_models)[[1]]) {
+  get_JBT_similarities <- function(term, POS = 'N', model = .jbt_models[[1]], modelname = names(.jbt_models)[[1]]) {
 
     jbtPOS <- .convertToJbtPOS(POS)
 
     # get from temp dir if existent
     fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsimapi__', modelname, '__'))
     js_doc <- cache$load(filename = fname, computefun = function() {
-      url <- sprintf(model_template, term, jbtPOS)
+      url <- .get_jbt_url(.sim_urlpattern, model, term, jbtPOS)
       get_json_from_url(url)
     })
 
@@ -90,12 +134,16 @@ with(jbt, {
   #'
   #'
   #'
-  get_JBT_senses <- function(term, POS = 'N', modelname = names(.sense_models)[[1]], isas = F) {
-    model_template = .sense_models[[modelname]]
+  get_JBT_senses <- function(term, POS = 'N', modelname = names(.jbt_models)[[1]], finer=T, isas = F) {
+    model = .jbt_models[[modelname]]
     jbtPOS <- .convertToJbtPOS(POS)
-    fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsenseapi__', modelname, '__'))
+    fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsenseapi', if(finer) 'finer' else '' ,'__', modelname, '__'))
     json_doc <- cache$load(fname, function() {
-      url <- sprintf(model_template, term, jbtPOS)
+      if(finer){
+        url <- .get_jbt_url(.sense_fine_urlpattern, model, term, jbtPOS)
+      }else{
+        url <- .get_jbt_url(.sense_urlpattern, model, term, jbtPOS)
+      }
       get_json_from_url(url)
     })
 
