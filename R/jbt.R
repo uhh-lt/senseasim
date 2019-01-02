@@ -15,12 +15,10 @@ with(jbt, {
   .get_jbt_url = function(pattern, model, term, pos)
     return(stringr::str_interp(pattern))
 
-  #  "ar" "de" "en" "es" "fa" "fr" "it" "nl" "pt" "ru" "sv" "zh"
-
   .get_best_jbtmodel_for_lang <- function(lang) {
-    matched_models <- grep('^bn_', names(jbt$.jbt_models), value=T)
-    if(length(matched_models) > 0){
-      return(matched_models[[1]])
+    matching_models <- grep('^bn_', names(jbt$.jbt_models), value=T)
+    if(length(matching_models) > 0){
+      return(matching_models[[1]])
     }
     return(NULL)
   }
@@ -94,12 +92,12 @@ with(jbt, {
   #'
   #'
   #'
-  get_JBT_similarities <- function(term, POS = 'N', model = .jbt_models[[1]], modelname = names(.jbt_models)[[1]]) {
-
+  get_JBT_similarities <- function(term, POS = 'N', jbt_modelname = names(.jbt_models)[[1]]) {
+    model = .jbt_models[[jbt_modelname]]
     jbtPOS <- .convertToJbtPOS(POS)
 
     # get from temp dir if existent
-    fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsimapi__', modelname, '__'))
+    fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsimapi__', jbt_modelname, '__'))
     js_doc <- cache$load(filename = fname, computefun = function() {
       url <- .get_jbt_url(.sim_urlpattern, model, term, jbtPOS)
       get_json_from_url(url)
@@ -134,10 +132,10 @@ with(jbt, {
   #'
   #'
   #'
-  get_JBT_senses <- function(term, POS = 'N', modelname = names(.jbt_models)[[1]], finer=T, isas = F) {
-    model = .jbt_models[[modelname]]
+  get_JBT_senses <- function(term, POS = 'N', jbt_modelname = names(.jbt_models)[[1]], finer=T, isas = F) {
+    model = .jbt_models[[jbt_modelname]]
     jbtPOS <- .convertToJbtPOS(POS)
-    fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsenseapi', if(finer) 'finer' else '' ,'__', modelname, '__'))
+    fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsenseapi', if(finer) 'finer' else '' ,'__', jbt_modelname, '__'))
     json_doc <- cache$load(fname, function() {
       if(finer){
         url <- .get_jbt_url(.sense_fine_urlpattern, model, term, jbtPOS)

@@ -15,7 +15,7 @@ with(sensevectors, {
     jbt_stanfordnewfine_en = function(term, POS, modelname = NA)
       jbt$get_JBT_senses(
         term, POS,
-        modelname = 'en_jbt_stanfordNew',
+        jbt_modelname = 'en_jbt_stanfordNew',
         finer = T,
         isas = F
         ),
