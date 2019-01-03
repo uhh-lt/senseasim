@@ -97,7 +97,8 @@ with(jbt, {
   #'
   #'
   #'
-  get_JBT_similarities <- function(term, POS = 'N', jbt_modelname = names(.jbt_models)[[1]]) {
+  get_JBT_similarities <- function(term, POS = NA, jbt_modelname = names(.jbt_models)[[1]]) {
+    if(is.na(POS)) POS <- 'N'
     model = .jbt_models[[jbt_modelname]]
     jbtPOS <- .convertToJbtPOS(POS)
 
@@ -137,7 +138,8 @@ with(jbt, {
   #'
   #'
   #'
-  get_JBT_senses <- function(term, POS = 'N', jbt_modelname = names(.jbt_models)[[1]], finer=T, isas = F) {
+  get_JBT_senses <- function(term, POS = NA, jbt_modelname = names(.jbt_models)[[1]], finer=T, isas = F) {
+    if(is.na(POS)) POS <- 'N'
     model = .jbt_models[[jbt_modelname]]
     jbtPOS <- .convertToJbtPOS(POS)
     fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsenseapi', if(finer) 'finer' else '' ,'__', jbt_modelname, '__'))

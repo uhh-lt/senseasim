@@ -47,7 +47,7 @@ with(wsi, {
   #'
   vs.similarity.matrix <- function(terms, modelname, n = 500, identifier = NULL, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T){
     model <- vsm$.models_loaded[[modelname]]
-    n <- min(n, nrow(model$M))
+    n <- min(n, if (is.array(terms) || is.data.frame(terms)) nrow(terms) else length(terms))
     terms <- terms[1:n]
     if(is.integer(terms)) {
       idx <- terms
@@ -56,9 +56,9 @@ with(wsi, {
     }
 
     if(is.null(identifier)) {
-      identifier <- paste0(terms, collapse = ';')
+      identifier <- digest::digest(terms)
     }
-    message(sprintf('[%s-%d-%s]: Preparing similarity matrix of top %s most similar terms for term \'%s\' and matrix \'%s\'. ', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), n, identifier, modelname))
+    util$message(sprintf('Preparing similarity matrix of %s terms for \'%s\' based on matrix \'%s\'. ', n, identifier, modelname))
 
     fname <- cache$get_filename(identifier, '', dirname = cache$data_temp_dir(), prefix = paste0('simmat__', modelname, '__', simfun.name,  '__n', n, '__'))
     SIM <- cache$load(filename = fname, computefun = function() {
@@ -135,6 +135,30 @@ with(wsi, {
       SIM <- vs.similarity.matrix(sims$idx, modelname, n = topn.similar.terms, identifier = mterm$mterm, simfun = simfun, simfun.name = simfun.name, simfun.issymmetric = simfun.issymmetric)
       # SIM is already pruned to top n but term is still in there, so remove it (and it should be the very most similar term!)
       SIM <- SIM[2:topn.similar.terms,2:topn.similar.terms]
+      # prune by threshold, i.e. everything below will be set to zero
+      SIM[which(SIM < thresh)] <- 0
+      labels <- cluster.fun(SIM)
+      aslists <- clust$as.cluster.lists(labels)
+      result <- list(labels = labels, itemlists = aslists)
+      return(result)
+    })
+    if(is.numeric(minsize) & minsize > 1){
+      result$itemlists <- Filter(function(l) length(l) >= minsize, result$itemlists)
+    }
+    return(result)
+  }
+
+
+  #'
+  #' induce senses by clustering the similarity matrix of 'terms'
+  #'
+  induceby.simcluster.terms <- function(terms, modelname, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+    model <- vsm$.models_loaded[[modelname]]
+    desc <- digest::digest(terms)
+    fname <- cache$get_filename(desc, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterterms__', modelname, '__', simfun.name, '__', thresh, '__', cluster.fun.name, '__'))
+    result <- cache$load(filename = fname, computefun = function() {
+      n <- if (is.array(terms) || is.data.frame(terms)) nrow(terms) else length(terms)
+      SIM <- vs.similarity.matrix(terms, modelname, n = n, identifier = desc, simfun = simfun, simfun.name = simfun.name, simfun.issymmetric = simfun.issymmetric)
       # prune by threshold, i.e. everything below will be set to zero
       SIM[which(SIM < thresh)] <- 0
       labels <- cluster.fun(SIM)
