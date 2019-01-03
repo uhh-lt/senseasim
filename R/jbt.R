@@ -15,8 +15,13 @@ with(jbt, {
   .get_jbt_url = function(pattern, model, term, pos)
     return(stringr::str_interp(pattern))
 
-  .get_best_jbtmodel_for_lang <- function(lang) {
+  .jbtmodels_for_lang <- function(lang) {
     matching_models <- grep('^bn_', names(jbt$.jbt_models), value=T)
+    return(matching_models)
+  }
+
+  .get_best_jbtmodel_for_lang <- function(lang) {
+    matching_models <- .jbtmodels_for_lang(lang)
     if(length(matching_models) > 0){
       return(matching_models[[1]])
     }

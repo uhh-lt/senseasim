@@ -1,6 +1,6 @@
-inventory <- new.env(parent = .GlobalEnv)
+vwsi <- new.env(parent = .GlobalEnv)
 
-with(inventory, {
+with(vwsi, {
 
   .inventories_loaded <- list()
 
@@ -63,7 +63,7 @@ with(inventory, {
         senselists <- .inventories_loaded[[inventoryname]]$senses
         if(word %in% names(senselists))
           return(senselists[[word]])
-        util$message(sprintf("Term '%s' not found in inventory '%s'.", word, inventoryname))
+        util$message(sprintf("Term '%s' not found in vwsi inventory '%s'.", word, inventoryname))
         return(list())
       })
     })

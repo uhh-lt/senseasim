@@ -7,12 +7,12 @@ with(sensevectors, {
     vsm_model = 'EN_100k_lsa',
     topn_sense_terms = 5,
     shift_lambda = .5,
-    senseinventoryname = 'jbt_stanfordnewfine_en'
+    senseinventoryname = 'en_jbtsense_stanfordNew_finer'
   )
 
   .senseinventories <- function() list(
     #
-    jbt_stanfordnewfine_en = function(term, POS, modelname = NA)
+    en_jbtsense_stanfordNew_finer = function(term, POS, modelname = NA)
       jbt$get_JBT_senses(
         term, POS,
         jbt_modelname = 'en_jbt_stanfordNew',
