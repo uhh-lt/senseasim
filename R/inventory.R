@@ -46,7 +46,7 @@ with(inventory, {
           simfun.issymmetric = T,
           thresh = 0.66,
           minsize = 0,
-          cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
+          cluster.fun = function(X) { clust$cw(X, allowsingletons = F, remove_self_loops = T) },
           cluster.fun.name = 'cw_nosingletons')$itemlists
     ),
     #
