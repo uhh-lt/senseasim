@@ -126,20 +126,30 @@ with(wsi, {
   #'
   #' induce senses by clustering the similarity matrix
   #'
-  induceby.simcluster <- function(term, modelname, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+  induceby.simcluster.jbt <- function(term, POS, jbtmodelname, vsmmodelname, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+    fname <- cache$get_filename(term, POS, dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterjbt__', jbtmodelname, '__', vsmmodelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
+    result <- cache$load(filename = fname, computefun = function() {
+      sims <- jbt$get_JBT_similarities(term=term, POS=POS, jbt_modelname=jbtmodelname)
+      result <- induceby.simcluster.terms(terms=sims$term, modelname=vsmmodelname, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
+      return(result)
+    })
+    if(is.numeric(minsize) & minsize > 1){
+      result$itemlists <- Filter(function(l) length(l) >= minsize, result$itemlists)
+    }
+    return(result)
+  }
+
+  #'
+  #' induce senses by clustering the similarity matrix
+  #'
+  induceby.simcluster.vsm <- function(term, modelname, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
     model <- vsm$.models_loaded[[modelname]]
     mterm <- model$transform(term)
-    fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimcluster__', modelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
+    fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclustervsm__', modelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       sims <- vs.similarities(mterm$mterm, modelname, simfun = simfun, simfun.name = simfun.name)
-      SIM <- vs.similarity.matrix(sims$idx, modelname, n = topn.similar.terms, identifier = mterm$mterm, simfun = simfun, simfun.name = simfun.name, simfun.issymmetric = simfun.issymmetric)
-      # SIM is already pruned to top n but term is still in there, so remove it (and it should be the very most similar term!)
-      SIM <- SIM[2:topn.similar.terms,2:topn.similar.terms]
-      # prune by threshold, i.e. everything below will be set to zero
-      SIM[which(SIM < thresh)] <- 0
-      labels <- cluster.fun(SIM)
-      aslists <- clust$as.cluster.lists(labels)
-      result <- list(labels = labels, itemlists = aslists)
+      sims <- sims[1:topn.similar.terms,]
+      result <- induceby.simcluster.terms(terms=sims$idx, modelname=modelname, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
       return(result)
     })
     if(is.numeric(minsize) & minsize > 1){

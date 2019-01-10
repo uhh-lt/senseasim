@@ -21,7 +21,7 @@ with(sensevectors, {
         ),
     #
     sim500cluster_cw = function(term, POS = NA, modelname)
-      wsi$induceby.simcluster(
+      wsi$induceby.simcluster.vsm(
         term,
         modelname = modelname,
         topn.similar.terms = 500,
@@ -34,7 +34,7 @@ with(sensevectors, {
         cluster.fun.name = 'cw_nosingletons')$itemlists,
     #
     sim200cluster_cw = function(term, POS = NA, modelname)
-      wsi$induceby.simcluster(
+      wsi$induceby.simcluster.vsm(
         term,
         modelname = modelname,
         topn.similar.terms = 200,
@@ -47,7 +47,7 @@ with(sensevectors, {
         cluster.fun.name = 'cw_nosingletons')$itemlists,
     #
     sim200cluster_cw_minsize5 = function(term, POS = NA, modelname)
-      wsi$induceby.simcluster(
+      wsi$induceby.simcluster.vsm(
         term,
         modelname = modelname,
         topn.similar.terms = 200,
@@ -60,7 +60,7 @@ with(sensevectors, {
         cluster.fun.name = 'cw_singletons')$itemlists,
     #
     sim200cluster_cw_minsize3 = function(term, POS = NA, modelname)
-      wsi$induceby.simcluster(
+      wsi$induceby.simcluster.vsm(
         term,
         modelname = modelname,
         topn.similar.terms = 200,
