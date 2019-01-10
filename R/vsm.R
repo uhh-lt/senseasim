@@ -6,61 +6,73 @@ with(vsm, {
 
   .models <- function() list(
     w2v_gnews_300   = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(), '/w2v/GoogleNews-vectors-negative300.txt'),
       transformer = function(w) w,
       unk = 'unknown'
     ),
     glove_6B_50d = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/glove/glove.6B.50d.txt'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
     glove_6B_50d_1K = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/glove/glove.6B.50d.1K.txt'),
       transformer    = function(w) tolower(w),
       unk = 'the'
     ),
     glove_6B_300d = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/glove/glove.6B.300d.txt'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
     sympat300d = list(
+      lang = 'en',
       local_location = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_300.txt'),
       transformer    = function(w) tolower(w),
       unk = 'UNK'
     ),
     sympat500d = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/sympatEmb/sp_plus_embeddings_500.txt'),
       transformer    = function(w) tolower(w),
       unk = 'UNK'
     ),
     sympat10000d = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/sympatEmb/sp_plus_embeddings_10000.txt'),
       transformer    = function(w) tolower(w),
       unk = 'UNK'
     ),
     paragramSL = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/paragram/paragram_300_sl999/paragram_300_sl999.txt'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
     paragramWS = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/paragram/paragram_300_ws353/paragram_300_ws353.txt'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
     EN_100k_hal_lsa = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/lsafun/EN_100k'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
     EN_100k_lsa = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/lsafun/EN_100k_lsa'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
     ft_de = list(
+      lang = 'de',
       local_location = paste0(cache$data_dir(),'/fasttext/cc.de.300.vec.gz'),
       transformer    = function(w) w,
       unk = 'unknown'

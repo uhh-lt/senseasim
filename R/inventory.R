@@ -67,9 +67,9 @@ with(inventory, {
     return(NULL)
   }
 
-  .get <- function(inventoryname) {
+  .get <- function(inventoryname, inventories = .inventories_available()) {
     if(!(inventoryname %in% names(.inventories_loaded))){
-      loadedinventory <- .inventories_available()[[inventoryname]]
+      loadedinventory <- inventories[[inventoryname]]
       loadedinventory$init()
       loadedinventory$name <- inventoryname
       .inventories_loaded[[length(.inventories_loaded)+1]] <<- loadedinventory
@@ -81,55 +81,64 @@ with(inventory, {
 
   .generate_from_jbtmodels <- function() {
     # generate jbt models that have sense models
-    for(jbtmodelname in names(jbt$.jbt_models)) {
+    result <- lapply(names(jbt$.jbt_models), function(jbtmodelname) {
+      inventories_for_jbtmodel <- list()
       jbtmodel <- jbt$.jbt_models[[jbtmodelname]]
-      # senses if available
-      if(jbtmodel$sensemodel){
-        newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbtsense_${jbtmodel$name}')
-        newjbtinventory <- list(
-          lang = jbtmodel$lang,
-          init = function() util$message('No loading neccessary.'),
-          senses = function(term, POS) jbt$get_JBT_senses(term, POS, jbt_modelname = jbtmodel$name, finer = F, isas = F)
-        )
-      }
+      print(jbtmodelname)
       # finer senses if available
       if(jbtmodel$finersensemodel){
         newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbtsense_${jbtmodel$name}_finer')
         newjbtinventory <- list(
           lang = jbtmodel$lang,
           init = function() util$message('No loading neccessary.'),
-          senses = function(term, POS) jbt$get_JBT_senses(term, POS, jbt_modelname = jbtmodel$name, finer = T, isas = F)
+          senses = function(term, POS) jbt$get_JBT_senses(term, POS, jbt_modelname = jbtmodelname, finer = T, isas = F)
         )
+        inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
+      }
+      # senses if available
+      if(jbtmodel$sensemodel){
+        newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbtsense_${jbtmodel$name}')
+        newjbtinventory <- list(
+          lang = jbtmodel$lang,
+          init = function() util$message('No loading neccessary.'),
+          senses = function(term, POS) jbt$get_JBT_senses(term, POS, jbt_modelname = jbtmodelname, finer = F, isas = F)
+        )
+        inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
       }
       # senses by clustering jbt similar terms 'cluster__glove_6B_50d_1K__sim500cluster_cw'
-      newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbt_${jbtmodel$name}__${vsmmodelname}__sim500cluster_cw')
+      vsmodelname <- 'glove_6B_50d_1K'
+      newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbt_${jbtmodel$name}__${vsmodelname}__sim500cluster_mcl')
       newjbtinventory <- list(
         lang = jbtmodel$lang,
-        init = function() vsm$load_default_matrices(models_to_load = list('glove_6B_50d_1K')),
-        senses = function(term, POS) jbt$get_JBT_senses(term, POS, jbt_modelname = jbtmodel$name, finer = T, isas = F)
-      #   wsi$induceby.simcluster.vsm(
-      #     term,
-      #     modelname = 'glove_6B_50d_1K',
-      #     topn.similar.terms = 500,
-      #     simfun = senseasim$cos,
-      #     simfun.name = 'cos',
-      #     simfun.issymmetric = T,
-      #     thresh = 0.66,
-      #     minsize = 0,
-      #     cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
-      #     cluster.fun.name = 'cw_nosingletons')$itemlists
-      # )
+        init = function() {  print(jbtmodelname); vsm$load_default_matrices(models_to_load = list(vsmodelname))},
+        senses = function(term, POS) { print(jbtmodelname); wsi$induceby.simcluster.jbt(
+          term = term,
+          POS = POS,
+          jbtmodelname = jbtmodelname,
+          vsmodelname = vsmodelname,
+          topn.similar.terms = 500,
+          simfun = senseasim$cos,
+          simfun.name = 'cos',
+          simfun.issymmetric = T,
+          thresh = 0.66,
+          minsize = 0,
+          cluster.fun = function(X) { clust$mcl(X, allowsingletons = F) },
+          cluster.fun.name = 'mcl_nosingletons')$itemlists}
       )
-    }
+      inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
+      return(inventories_for_jbtmodel)
+    })
+    result <- unlist(result, recursive = F, use.names = T)
+    return(result)
   }
 
-  sense_functions <- function(lazyloading = T) {
-    sense_functions <- sapply(names(.inventories_available()), function(inventoryname) {
+  sense_functions <- function(lazyloading = T, inventories = .inventories_available()) {
+    sense_functions <- sapply(names(inventories), function(inventoryname) {
       if(!lazyloading)
-        inventory <- .get(inventoryname)
+        inventory <- .get(inventoryname, inventories)
       return(function(word, POS = NA){
         if(lazyloading)
-          inventory <- .get(inventoryname)
+          inventory <- .get(inventoryname, inventories)
         senselist <- inventory$senses(word, POS)
         if(!is.null(senselist) && length(senselist) > 0)
           return(senselist)
