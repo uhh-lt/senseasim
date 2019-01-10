@@ -5,73 +5,73 @@ with(vsm, {
   .models_loaded <- list()
 
   .models <- function() list(
-    w2v_gnews_300   = list(
+    en_w2v_gnews_300   = list(
       lang = 'en',
       local_location = paste0(cache$data_dir(), '/w2v/GoogleNews-vectors-negative300.txt'),
       transformer = function(w) w,
       unk = 'unknown'
     ),
-    glove_6B_50d = list(
+    en_glove_6B_50d = list(
       lang = 'en',
       local_location = paste0(cache$data_dir(),'/glove/glove.6B.50d.txt'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
-    glove_6B_50d_1K = list(
+    en_glove_6B_50d_1K = list(
       lang = 'en',
       local_location = paste0(cache$data_dir(),'/glove/glove.6B.50d.1K.txt'),
       transformer    = function(w) tolower(w),
       unk = 'the'
     ),
-    glove_6B_300d = list(
+    en_glove_6B_300d = list(
       lang = 'en',
       local_location = paste0(cache$data_dir(),'/glove/glove.6B.300d.txt'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
-    sympat300d = list(
+    en_sympat300d = list(
       lang = 'en',
       local_location = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_300.txt'),
       transformer    = function(w) tolower(w),
       unk = 'UNK'
     ),
-    sympat500d = list(
+    en_sympat500d = list(
       lang = 'en',
       local_location = paste0(cache$data_dir(),'/sympatEmb/sp_plus_embeddings_500.txt'),
       transformer    = function(w) tolower(w),
       unk = 'UNK'
     ),
-    sympat10000d = list(
+    en_sympat10000d = list(
       lang = 'en',
       local_location = paste0(cache$data_dir(),'/sympatEmb/sp_plus_embeddings_10000.txt'),
       transformer    = function(w) tolower(w),
       unk = 'UNK'
     ),
-    paragramSL = list(
+    en_paragramSL = list(
       lang = 'en',
       local_location = paste0(cache$data_dir(),'/paragram/paragram_300_sl999/paragram_300_sl999.txt'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
-    paragramWS = list(
+    en_paragramWS = list(
       lang = 'en',
       local_location = paste0(cache$data_dir(),'/paragram/paragram_300_ws353/paragram_300_ws353.txt'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
-    EN_100k_hal_lsa = list(
+    en_100k_hal_lsa = list(
       lang = 'en',
       local_location = paste0(cache$data_dir(),'/lsafun/EN_100k'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
-    EN_100k_lsa = list(
+    en_100k_lsa = list(
       lang = 'en',
       local_location = paste0(cache$data_dir(),'/lsafun/EN_100k_lsa'),
       transformer    = function(w) tolower(w),
       unk = 'unknown'
     ),
-    ft_de = list(
+    de_ft = list(
       lang = 'de',
       local_location = paste0(cache$data_dir(),'/fasttext/cc.de.300.vec.gz'),
       transformer    = function(w) w,
@@ -80,18 +80,33 @@ with(vsm, {
   )
 
   .sensemodels <- function() list(
-    adagram = list(
+    en_adagram = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/adagram/clean_lemma_model_alpha_05.txt'),
       transformer    = function(w) tolower(w),
       unk = 'the'
     ),
-    autoextend = list(
+    en_autoextend = list(
+      lang = 'en',
       local_location = paste0(cache$data_dir(),'/autoextend/lexemes.txt'),
       transformer = function(w) tolower(w),
       unk = 'the'
     )
   )
 
+
+  .modelnames_for_lang <- function(lang) {
+    matching_models <- grep(paste0('^',lang,'_'), names(.models()), value=T)
+    return(matching_models)
+  }
+
+  .get_best_modelname_for_lang <- function(lang) {
+    matching_models <- .modelnames_for_lang(lang)
+    if(length(matching_models) > 0){
+      return(matching_models[[1]])
+    }
+    return(NULL)
+  }
 
   build_bigmatrix_from_txt <- function(filename, separator = ' ') {
     # get the filenames
@@ -177,7 +192,7 @@ with(vsm, {
   }
 
 
-  load_default_matrices <- function(models_to_load = list('EN_100k_lsa')) {
+  load_default_matrices <- function(models_to_load = list('en_100k_lsa')) {
     # load latent vectors
     for(modelname in names(.models())){
       if(modelname %in% models_to_load){

@@ -4,7 +4,7 @@ sensevectors <- new.env(parent = .GlobalEnv)
 with(sensevectors, {
 
   .defaults <- list(
-    vsm_model = 'EN_100k_lsa',
+    vsm_model = 'en_100k_lsa',
     topn_sense_terms = 5,
     shift_lambda = .5,
     senseinventoryname = 'en_jbtsense_stanfordNew_finer'

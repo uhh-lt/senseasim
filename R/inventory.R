@@ -26,7 +26,7 @@ with(inventory, {
       senses = function(term, POS = NA)
         wsi$induceby.simcluster.vsm(
           term,
-          modelname = 'glove_6B_50d_1K',
+          modelname = 'en_glove_6B_50d_1K',
           topn.similar.terms = 500,
           simfun = senseasim$cos,
           simfun.name = 'cos',
@@ -39,11 +39,11 @@ with(inventory, {
     #
     cluster__EN_100k_lsa__sim500cluster_cw = list(
       lang = 'en',
-      init = function() vsm$load_default_matrices(models_to_load = list('EN_100k_lsa')),
+      init = function() vsm$load_default_matrices(models_to_load = list('en_100k_lsa')),
       senses = function(term, POS = NA)
         wsi$induceby.simcluster.vsm(
           term,
-          modelname = 'EN_100k_lsa',
+          modelname = 'en_100k_lsa',
           topn.similar.terms = 500,
           simfun = senseasim$cos,
           simfun.name = 'cos',
