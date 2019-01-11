@@ -31,7 +31,11 @@ class FastTextEmbedding(Embedding):
 
   def nearest_neighbors(self, word, n=200):
     tuples = ftmodel.nearest_neighbors(word, n)
-    return tuples;
+    return tuples
+
+  def nearest_neighbors_by_vector(self, word, n=200):
+    tuples = self.ftmodel.words_for_vector(v, n)
+    return tuples
 
   def containsWord(self, word, explicit=False):
     if explicit:
