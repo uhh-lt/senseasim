@@ -85,7 +85,7 @@ with(sensevectors, {
 
     model <- vsm$.models_loaded[[vsm_modelname]]
     # prepare backup return values
-    R$v <- matrix(NA, ncol = 1, nrow = ncol(model$M), dimnames = list(NULL, paste0(term,'#')))
+    R$v <- matrix(NA, ncol = 1, nrow = model$vdim, dimnames = list(NULL, paste0(term,'#')))
     R$v_shift <- R$v
 
     # get the sense lists
@@ -93,7 +93,7 @@ with(sensevectors, {
     R$termSenseInventory <- senseinventoryfun(term, POS, vsm_modelname)
     R$nsenses <- length(R$termSenseInventory)
     R$status[[length(R$status)+1]] <- sprintf('found %d non-empty senses for term=\'%s#%s\'', R$nsenses, term, POS)
-    message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
+    util$message(R$status[[length(R$status)]])
 
     # make a proper index as dataframe, where we can e.g. select all entries from sense 2 with R$index[which(R$index$sense == 2),]
     mterm <- model$transform(term)
@@ -107,7 +107,7 @@ with(sensevectors, {
     if(is.null(R$termSenseInventory) | length(R$termSenseInventory) < 1) {
       # if sense inventory is empty make a warning
       R$status[[length(R$status)+1]] <- 'Attention: sense inventory is empty.'
-      message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
+      util$message(R$status[[length(R$status)]])
     }
 
     for(i in seq_along(R$termSenseInventory)) {
@@ -133,7 +133,7 @@ with(sensevectors, {
     # if mapped sense inventory is empty we can't return anything
     if(length(uniqueindex) <= 0) {
       R$status[[length(R$status)+1]] <- sprintf('No known sense terms for \'%s %s\'. Skip processing.', term, POS)
-      message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
+      util$message(R$status[[length(R$status)]])
       return(R)
     }
 
@@ -149,7 +149,7 @@ with(sensevectors, {
       sterms <- unique(R$index$mterm[which(R$index$sense == i & !R$index$unknown)])
       if(length(sterms) <= 0) {
         R$status[[length(R$status)+1]] <- sprintf('No known sense terms for sense %d of \'%s %s\'. Producing NA vector.', i, term, POS)
-        message(sprintf('[%s-%d-%s] %s.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), R$status[[length(R$status)]]))
+        util$message(R$status[[length(R$status)]])
         return(R)
       }
       s <- matrix(ncol=1, rowMeans(M[,sterms,drop=F]), byrow = T)
@@ -235,7 +235,7 @@ with(sensevectors, {
       # initialization actions
       local_outputfile <<- paste0(outputfile, Sys.getpid())
       sensevectors$init()
-      message(sprintf('[%s-%d-%s] saving to \'%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S'), local_outputfile))
+      util$message(sprintf('saving to \'%s\'.', local_outputfile))
     })
   }
 
@@ -258,13 +258,10 @@ with(sensevectors, {
     })
 
     # shutdown cluster
-    message(sprintf('[%s-%d-%s] shutting down cluster.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), '%m%d-%H%M%S')))
+    util$message('shutting down cluster.')
     parallel::stopCluster(cl)
 
     tictoc::toc()
   }
 
 })
-
-
-
