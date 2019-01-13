@@ -4,7 +4,7 @@ with(vsm0, {
 
   .models_loaded <- list()
 
-  .models <- function() list(
+  .models_available <- function() list(
     en_glove_6B_50d = list(
       lang = 'en',
       init = function() .txt.load_matrix (
@@ -26,7 +26,7 @@ with(vsm0, {
   )
 
   .modelnames_for_lang <- function(lang) {
-    matching_models <- grep(paste0('^',lang,'_'), names(.models()), value=T)
+    matching_models <- grep(paste0('^',lang,'_'), names(.models_available()), value=T)
     return(matching_models)
   }
 
@@ -174,13 +174,10 @@ with(vsm0, {
     }
   }
 
-  similarity <- function(term1, term2, vsmodel, simfun = senseasim$cos) {
-    v1 <- vsmodel$getvector(term1)
-    print(v1)
-    v2 <- vsmodel$getvector(term2)
-    print(v2)
+  .similarity <- function(term1, term2, vsmodel, simfun = senseasim$cos) {
+    v1 <- vsmodel$vec(term1)
+    v2 <- vsmodel$vec(term2)
     sim <- simfun(v1,v2)
-    print(sim)
     return(list(
       t1 = rownames(v1)[[1]],
       t2 = rownames(v2)[[1]],
@@ -190,14 +187,14 @@ with(vsm0, {
     ))
   }
 
-  .getmodel <- function(vsmodelname, vsmodels = .models()) {
+  .getmodel <- function(vsmodelname, vsmodels = .models_available()) {
     if(!(vsmodelname %in% names(.models_loaded))){
       vsmodel <- vsmodels[[vsmodelname]]
       loadedvsmodel <- vsmodel$init()
       loadedvsmodel$lang <- vsmodel$lang
-      loadedvsmodel$getvector <- vsmodel$getvector
+      loadedvsmodel$vec <- vsmodel$getvector
       loadedvsmodel$name <- vsmodelname
-      loadedvsmodel$sim <- function(t1, t2, simfun = senseasim$cos) similarity(t1, t2, loadedvsmodel, simfun)
+      loadedvsmodel$sim <- function(t1, t2, simfun = senseasim$cos) .similarity(t1, t2, loadedvsmodel, simfun)
       .models_loaded[[length(.models_loaded)+1]] <<- loadedvsmodel
       names(.models_loaded)[[length(.models_loaded)]] <<- vsmodelname
       return(loadedvsmodel)
@@ -205,21 +202,17 @@ with(vsm0, {
     return(.models_loaded[[vsmodelname]])
   }
 
-  getvector_functions <- function(lazyloading = T, vsmodels = .models()) {
-    vector_functions <- sapply(names(vsmodels), function(vsmodelname) {
+  get_models <- function(lazyloading = T, vsmodels = .models_available()) {
+    m <- sapply(names(vsmodels), function(vsmodelname) {
       if(!lazyloading)
         vsmodel <- .getmodel(vsmodelname, vsmodels)
-      return(function(word_or_index){
+      return(function(){
         if(lazyloading)
           vsmodel <- .getmodel(vsmodelname, vsmodels)
-        vector <- vsmodel$getvector(word_or_index)
-        if(!is.null(vector) && length(vector) > 0)
-          return(vector)
-        util$message(sprintf("Term '%s' not found in model '%s'.", word_or_index, vsmodelname))
-        return(NULL)
+        return(vsmodel)
       })
     })
-    return(vector_functions)
+    return(m)
   }
 
 })
