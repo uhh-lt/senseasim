@@ -9,24 +9,24 @@ with(inventory, {
     #
     en_jbtsense_stanfordNew_finer = list(
       lang = 'en',
-      init = function() util$message('No loading neccessary.'),
+      init = function() util$message('No loading of inventory neccessary.'),
       senses = function(term, POS) jbt$get_JBT_senses(term, POS, jbt_modelname = 'en_jbt_stanfordNew', finer = T, isas = F)
     ),
     #
     en_jbtsense_stanfordNew = list(
       lang = 'en',
-      init = function() util$message('No loading neccessary.'),
+      init = function() util$message('No loading of inventory neccessary.'),
       senses = function(term, POS) jbt$get_JBT_senses(term, POS, jbt_modelname = 'en_jbt_stanfordNew', finer = F, isas = F)
     ),
     #
     #
-    cluster__glove_6B_50d_1K__sim500cluster_cw = list(
+    cluster__glove_6B_50d__sim500cluster_cw = list(
       lang = 'en',
-      init = function() vsm$load_default_matrices(models_to_load = list('glove_6B_50d_1K')),
+      init = function() vsm$load_default_matrices(models_to_load = list('glove_6B_50d')),
       senses = function(term, POS = NA)
         wsi$induceby.simcluster.vsm(
           term,
-          modelname = 'en_glove_6B_50d_1K',
+          modelname = 'en_glove_6B_50d',
           topn.similar.terms = 500,
           simfun = senseasim$cos,
           simfun.name = 'cos',
@@ -105,8 +105,8 @@ with(inventory, {
         )
         inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
       }
-      # senses by clustering jbt similar terms 'cluster__glove_6B_50d_1K__sim500cluster_cw'
-      vsmodelname <- 'glove_6B_50d_1K'
+      # senses by clustering jbt similar terms 'cluster__glove_6B_50d__sim500cluster_cw'
+      vsmodelname <- 'glove_6B_50d'
       newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbt_${jbtmodel$name}__${vsmodelname}__sim500cluster_mcl')
       newjbtinventory <- list(
         lang = jbtmodel$lang,

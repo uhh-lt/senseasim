@@ -144,23 +144,24 @@ with(vsm0, {
     return(newmodel)
   }
 
-  .txt.get_vector <- function(term, modelname, .as_column = F) {
+  .txt.get_vector <- function(term_or_idx, modelname, .as_column = F) {
     model <- .models_loaded[[modelname]]
-    mterm <- model$transform(term)
-    v <- .txt.get_vector_from_txtmodel(mterm, model, .as_column)
-    return(v)
-  }
+    if(is.character(term_or_idx))
+      mterm <- model$transform(term_or_idx)
+    else{
+      if(term_or_idx > nrow(model$M) || term_or_idx < 1)
+        mterm <- model$unk
+      else
+        mterm <- list(term = model$vocab[[term_or_idx]], idx = term_or_idx)
+    }
 
-  .txt.get_vector_from_txtmodel <- function(mterm, model, .as_column = F) {
-    if(length(mterm$idx) > 0){
-      v <- model$M[mterm$idx,]
-      v <- matrix(nrow = 1, data = v, dimnames = list(mterm$term), byrow = T)
-    }else{
+    # get the vector
+    if(length(mterm$idx) > 0)
+      v <- matrix(nrow = 1, data = model$M[mterm$idx,], dimnames = list(mterm$term), byrow = T)
+    else
       v <- matrix(NA, nrow=1, ncol=ncol(M), dimnames = list(mterm$term)) # create a NA valued matrix with one vector and the dim of M)
-    }
-    if(.as_column){
+    if(.as_column)
       v <- t(v)
-    }
     return(v)
   }
 
@@ -175,8 +176,8 @@ with(vsm0, {
   }
 
   .similarity <- function(term1, term2, vsmodel, simfun = senseasim$cos) {
-    v1 <- vsmodel$vec(term1)
-    v2 <- vsmodel$vec(term2)
+    v1 <- vsmodel$vector(term1)
+    v2 <- vsmodel$vector(term2)
     sim <- simfun(v1,v2)
     return(list(
       t1 = rownames(v1)[[1]],
@@ -192,9 +193,9 @@ with(vsm0, {
     if(is.list(terms[[1]]) || is.vector(terms[[1]]))
       terms <- as.list(unlist(terms, recursive = T))
     if (length(terms) > 1)
-      vectors <- do.call(rbind, lapply(terms, vsmodel$vec))
+      vectors <- do.call(rbind, lapply(terms, vsmodel$vector))
     else
-      vectors <- vsmodel$vec(terms[[1]])
+      vectors <- vsmodel$vector(terms[[1]])
     return(vectors)
   }
 
@@ -203,7 +204,7 @@ with(vsm0, {
       vsmodel <- vsmodels[[vsmodelname]]
       loadedvsmodel <- vsmodel$init()
       loadedvsmodel$lang <- vsmodel$lang
-      loadedvsmodel$vec <- vsmodel$getvector
+      loadedvsmodel$vector <- vsmodel$getvector
       loadedvsmodel$name <- vsmodelname
       # convenience functions
       loadedvsmodel$sim <- function(t1, t2, simfun = senseasim$cos) .similarity(t1, t2, loadedvsmodel, simfun)
