@@ -187,6 +187,17 @@ with(vsm0, {
     ))
   }
 
+  .getvectors <- function(vsmodel, ...){
+    terms <- list(...)
+    if(is.list(terms[[1]]) || is.vector(terms[[1]]))
+      terms <- as.list(unlist(terms, recursive = T))
+    if (length(terms) > 1)
+      vectors <- do.call(rbind, lapply(terms, vsmodel$vec))
+    else
+      vectors <- vsmodel$vec(terms[[1]])
+    return(vectors)
+  }
+
   .getmodel <- function(vsmodelname, vsmodels = .models_available()) {
     if(!(vsmodelname %in% names(.models_loaded))){
       vsmodel <- vsmodels[[vsmodelname]]
@@ -194,7 +205,10 @@ with(vsm0, {
       loadedvsmodel$lang <- vsmodel$lang
       loadedvsmodel$vec <- vsmodel$getvector
       loadedvsmodel$name <- vsmodelname
+      # convenience functions
       loadedvsmodel$sim <- function(t1, t2, simfun = senseasim$cos) .similarity(t1, t2, loadedvsmodel, simfun)
+      loadedvsmodel$vectors <- function(...) .getvectors(loadedvsmodel, ...)
+      # add to list of loaded models
       .models_loaded[[length(.models_loaded)+1]] <<- loadedvsmodel
       names(.models_loaded)[[length(.models_loaded)]] <<- vsmodelname
       return(loadedvsmodel)
