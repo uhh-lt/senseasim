@@ -174,5 +174,6 @@ with(jbt, {
   }
 
   models <- lapply(names(.jbt_models_available), .getmodel)
+  names(models) <- names(.jbt_models_available)
 
 }) # end with(...)

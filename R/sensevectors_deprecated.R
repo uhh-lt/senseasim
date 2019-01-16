@@ -1,7 +1,7 @@
 
-sensevectors <- new.env(parent = .GlobalEnv)
+sensevectors_deprecated <- new.env(parent = .GlobalEnv)
 
-with(sensevectors, {
+with(sensevectors_deprecated, {
 
   .defaults <- list(
     vsm_model = 'en_100k_lsa',

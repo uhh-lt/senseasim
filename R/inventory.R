@@ -10,13 +10,13 @@ with(inventory, {
     en_jbtsense_stanfordNew_finer = list(
       lang = 'en',
       init = function() {},
-      senses = function(term, POS) jbt$.models[['en_jbt_stanfordNew']]$senses(term, POS, finer = T, isas = F)
+      senses = function(term, POS) jbt$models[['en_jbt_stanfordNew']]$senses(term, POS, finer = T, isas = F)
     ),
     #
     en_jbtsense_stanfordNew = list(
       lang = 'en',
       init  = function() {},
-      senses = function(term, POS) jbt$.models[['en_jbt_stanfordNew']]$senses(term, POS, finer = F, isas = F)
+      senses = function(term, POS) jbt$models[['en_jbt_stanfordNew']]$senses(term, POS, finer = F, isas = F)
     ),
     #
     #
@@ -84,7 +84,7 @@ with(inventory, {
     vsmodels <- vsm$get_models()
     vsmodel <- vsmodels[[vsmodelname]]()
     # generate jbt models that have sense models
-    result <- lapply(names(jbt$.jbt_models), function(jbtmodelname) {
+    result <- lapply(names(jbt$.models), function(jbtmodelname) {
       inventories_for_jbtmodel <- list()
       jbtmodel <- jbt$.models[[jbtmodelname]]
       print(jbtmodelname)
