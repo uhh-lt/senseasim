@@ -4,123 +4,29 @@ with(vsm, {
 
   .models_loaded <- list()
 
-  .models <- function() list(
-    en_w2v_gnews_300   = list(
-      lang = 'en',
-      local_location = paste0(cache$data_dir(), '/w2v/GoogleNews-vectors-negative300.txt'),
-      init = function() load_matrix('en_w2v_gnews_300', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_w2v_gnews_300', .as_column=F),
-      transformer = function(w) w,
-      unk = 'unknown'
-    ),
+  .models_available <- function() list(
     en_glove_6B_50d = list(
       lang = 'en',
-      local_location = paste0(cache$data_dir(),'/glove/glove.6B.50d.txt'),
-      init = function() load_matrix('en_glove_6B_50d', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_glove_6B_50d', .as_column=F),
-      transformer    = function(w) tolower(w),
-      unk = 'unknown'
+      init = function() .txt.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/glove/glove.6B.50d.txt'),
+        unk = 'unknown',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d', .as_column=F)
     ),
     en_glove_6B_50d_1K = list(
       lang = 'en',
-      local_location = paste0(cache$data_dir(),'/glove/glove.6B.50d.1K.txt'),
-      init = function() load_matrix('en_glove_6B_50d_1K', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_glove_6B_50d_1K', .as_column=F),
-      transformer    = function(w) tolower(w),
-      unk = 'the'
-    ),
-    en_glove_6B_300d = list(
-      lang = 'en',
-      local_location = paste0(cache$data_dir(),'/glove/glove.6B.300d.txt'),
-      init = function() load_matrix('en_glove_6B_300d', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_glove_6B_300d', .as_column=F),
-      transformer    = function(w) tolower(w),
-      unk = 'unknown'
-    ),
-    en_sympat300d = list(
-      lang = 'en',
-      local_location = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_300.txt'),
-      init = function() load_matrix('en_sympat300d', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_sympat300d', .as_column=F),
-      transformer    = function(w) tolower(w),
-      unk = 'UNK'
-    ),
-    en_sympat500d = list(
-      lang = 'en',
-      local_location = paste0(cache$data_dir(),'/sympatEmb/sp_plus_embeddings_500.txt'),
-      init = function() load_matrix('en_sympat500d', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_sympat500d', .as_column=F),
-      transformer    = function(w) tolower(w),
-      unk = 'UNK'
-    ),
-    en_sympat10000d = list(
-      lang = 'en',
-      local_location = paste0(cache$data_dir(),'/sympatEmb/sp_plus_embeddings_10000.txt'),
-      init = function() load_matrix('en_sympat10000d', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_sympat10000d', .as_column=F),
-      transformer    = function(w) tolower(w),
-      unk = 'UNK'
-    ),
-    en_paragramSL = list(
-      lang = 'en',
-      local_location = paste0(cache$data_dir(),'/paragram/paragram_300_sl999/paragram_300_sl999.txt'),
-      init = function() load_matrix('en_paragramSL', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_paragramSL', .as_column=F),
-      transformer    = function(w) tolower(w),
-      unk = 'unknown'
-    ),
-    en_paragramWS = list(
-      lang = 'en',
-      local_location = paste0(cache$data_dir(),'/paragram/paragram_300_ws353/paragram_300_ws353.txt'),
-      init = function() load_matrix('en_paragramWS', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_paragramWS', .as_column=F),
-      transformer    = function(w) tolower(w),
-      unk = 'unknown'
-    ),
-    en_100k_hal_lsa = list(
-      lang = 'en',
-      local_location = paste0(cache$data_dir(),'/lsafun/EN_100k'),
-      init = function() load_matrix('en_100k_hal_lsa', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_100k_hal_lsa', .as_column=F),
-      transformer    = function(w) tolower(w),
-      unk = 'unknown'
-    ),
-    en_100k_lsa = list(
-      lang = 'en',
-      local_location = paste0(cache$data_dir(),'/lsafun/EN_100k_lsa'),
-      init = function() load_matrix('en_100k_lsa', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'en_100k_lsa', .as_column=F),
-      transformer    = function(w) tolower(w),
-      unk = 'unknown'
-    ),
-    de_ft = list(
-      lang = 'de',
-      local_location = paste0(cache$data_dir(),'/fasttext/cc.de.300.vec.gz'),
-      init = function() load_matrix('de_ft', .models()),
-      getvector = function(word_or_index) get_vector(word_or_index, 'de_ft', .as_column=F),
-      transformer    = function(w) w,
-      unk = 'unknown'
+      init = function() .txt.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/glove/glove.6B.50d.1K.txt'),
+        unk = 'the',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d_1K', .as_column=F)
     )
   )
-
-  .sensemodels <- function() list(
-    en_adagram = list(
-      lang = 'en',
-      local_location = paste0(cache$data_dir(),'/adagram/clean_lemma_model_alpha_05.txt'),
-      transformer    = function(w) tolower(w),
-      unk = 'the'
-    ),
-    en_autoextend = list(
-      lang = 'en',
-      local_location = paste0(cache$data_dir(),'/autoextend/lexemes.txt'),
-      transformer = function(w) tolower(w),
-      unk = 'the'
-    )
-  )
-
 
   .modelnames_for_lang <- function(lang) {
-    matching_models <- grep(paste0('^',lang,'_'), names(.models()), value=T)
+    matching_models <- grep(paste0('^',lang,'_'), names(.models_available()), value=T)
     return(matching_models)
   }
 
@@ -132,7 +38,7 @@ with(vsm, {
     return(NULL)
   }
 
-  build_bigmatrix_from_txt <- function(filename, separator = ' ') {
+  .txt.build_bigmatrix_from_txt <- function(filename, separator = ' ') {
     # get the filenames
     bckngpath <- dirname(filename)
     bckngfile <- paste0(basename(filename), '.bin')
@@ -215,137 +121,113 @@ with(vsm, {
     return(T)
   }
 
-
-  load_default_matrices <- function(models_to_load = list('en_100k_lsa')) {
-    # load latent vectors
-    for(modelname in names(.models())){
-      if(modelname %in% models_to_load){
-        result_list <- load_matrix(modelname, .models())
-      }
-    }
-    for(modelname in names(.sensemodels())){
-      if(modelname %in% models_to_load){
-        result_list <- load_matrix(modelname, .sensemodels())
-      }
-    }
-    message(sprintf('[%s-%d-%s] Matrix size: %s', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), format(object.size(.models_loaded), units = "auto")))
-    return(T)
-  }
-
-  load_matrix <- function(modelname, models) {
-    if(modelname %in% names(.models_loaded)){
-      message(sprintf('[%s-%d-%s] model \'%s\' already loaded.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), modelname))
-      return(T)
-    }
-
-    add_to_loaded_models <- function (newmodel){
-      .models_loaded[[length(.models_loaded)+1]] <<- newmodel
-      names(.models_loaded)[[length(.models_loaded)]] <<- newmodel$name
-    }
-
+  .txt.load_matrix <- function(filelocation, unk, transformer) {
     # bigmatrix descriptorfile
-    fdesc <- {
-      if(modelname %in% names(models))
-        paste0(models[[modelname]]$local_location,'.bin.desc')
-      else
-        stop(sprintf('modelname is unknonwn \'%s\'.', modelname))
-    }
+    fdesc <- paste0(filelocation,'.bin.desc')
 
     if(!file.exists(fdesc)) {
-      if(!build_bigmatrix_from_txt(models[[modelname]]$local_location)){
+      if(!.txt.build_bigmatrix_from_txt(filelocation)){
         util$message(sprintf('Loading Vector Space Matrix from \'%s\' failed, file does not exists.', fdesc))
         return(F)
       }
     }
 
     # else read vector space matrix as bigmatrix
-    message(sprintf('[%s-%d-%s] loading Vector Space Matrix \'%s\'', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), modelname))
+    util$message(sprintf('loading Vector Space Matrix \'%s\'', filelocation))
     newmodel <- newEmptyObject()
     newmodel$M <- bigmemory::attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc))
     newmodel$vocab <- readLines(gsub('[.]desc$', '.rownames', fdesc))
     assertthat::are_equal(nrow(newmodel$M), length(newmodel$vocab))
-    newmodel$name <- modelname
-    newmodel$unk <- list(mterm = models[[modelname]]$unk, idx = which(newmodel$vocab == models[[modelname]]$unk))
-    newmodel$transform <- function(term) { .get_vocab_term(term, models[[modelname]]$transformer, newmodel) }
+    newmodel$unk <- list(term = unk, idx = which(newmodel$vocab == unk))
+    newmodel$transform <- function(term) { .txt.get_vocabulary_term(term, transformer, newmodel) }
     newmodel$vdim <- ncol(newmodel$M)
-    add_to_loaded_models(newmodel)
-
-    return(T)
+    return(newmodel)
   }
 
-  get_vector <- function(term, modelname, .as_column = F) {
+  .txt.get_vector <- function(term_or_idx, modelname, .as_column = F) {
     model <- .models_loaded[[modelname]]
-    mterm <- model$transform(term)
-    v <- .get_vector(mterm, model, .as_column)
-    return(v)
-  }
-
-  .get_vector <- function(mterm, model, .as_column = F) {
-    if(length(mterm$idx) > 0){
-      v <- model$M[mterm$idx,]
-      v <- matrix(nrow = 1, data = v, dimnames = list(mterm$mterm), byrow = T)
-    }else{
-      v <- matrix(NA, nrow=1, ncol=ncol(M), dimnames = list(mterm$mterm)) # create a NA valued matrix with one vector and the dim of M)
+    if(is.character(term_or_idx))
+      mterm <- model$transform(term_or_idx)
+    else{
+      if(term_or_idx > nrow(model$M) || term_or_idx < 1)
+        mterm <- model$unk
+      else
+        mterm <- list(term = model$vocab[[term_or_idx]], idx = term_or_idx)
     }
-    if(.as_column){
+
+    # get the vector
+    if(length(mterm$idx) > 0)
+      v <- matrix(nrow = 1, data = model$M[mterm$idx,], dimnames = list(mterm$term), byrow = T)
+    else
+      v <- matrix(NA, nrow=1, ncol=ncol(M), dimnames = list(mterm$term)) # create a NA valued matrix with one vector and the dim of M)
+    if(.as_column)
       v <- t(v)
-    }
     return(v)
   }
 
-  .get_vocab_term <- function(term, tfun, model){
+  .txt.get_vocabulary_term <- function(term, tfun, model){
     mterm <- tfun(term)
     idx <- which(model$vocab == mterm)
     if(length(idx) > 0) {
-      return(list('mterm' = mterm, 'idx' = idx))
+      return(list(term = mterm, idx = idx))
     }else{
       return(model$unk)
     }
   }
 
-  similarity <- function(term1, term2, modelname, simfun = senseasim$cos) {
-    model <- .models_loaded[[modelname]]
-    mterm1 <- model$transform(term1)
-    mterm2 <- model$transform(term2)
-    v1 <- .get_vector(mterm1, model)
-    v2 <- .get_vector(mterm2, model)
+  .similarity <- function(term1, term2, vsmodel, simfun = senseasim$cos) {
+    v1 <- vsmodel$vector(term1)
+    v2 <- vsmodel$vector(term2)
     sim <- simfun(v1,v2)
     return(list(
-      t1 = mterm1$mterm,
-      t2 = mterm2$mterm,
-      t1.is.unk = mterm1$idx == model$unk$idx,
-      t2.is.unk = mterm2$idx == model$unk$idx,
+      t1 = rownames(v1)[[1]],
+      t2 = rownames(v2)[[1]],
+      t1.is.unk = rownames(v1)[[1]] == vsmodel$unk$term,
+      t2.is.unk = rownames(v2)[[1]] == vsmodel$unk$term,
       sim = sim
     ))
   }
 
-  .get <- function(vsmodelname, vsmodels = .models()) {
+  .getvectors <- function(vsmodel, ...){
+    terms <- list(...)
+    if(is.list(terms[[1]]) || is.vector(terms[[1]]))
+      terms <- as.list(unlist(terms, recursive = T))
+    if (length(terms) > 1)
+      vectors <- do.call(rbind, lapply(terms, vsmodel$vector))
+    else
+      vectors <- vsmodel$vector(terms[[1]])
+    return(vectors)
+  }
+
+  .getmodel <- function(vsmodelname, vsmodels = .models_available()) {
     if(!(vsmodelname %in% names(.models_loaded))){
-      loadedvsmodel <- vsmodels[[vsmodelname]]
-      loadedvsmodel$init()
+      vsmodel <- vsmodels[[vsmodelname]]
+      loadedvsmodel <- vsmodel$init()
+      loadedvsmodel$lang <- vsmodel$lang
+      loadedvsmodel$vector <- vsmodel$getvector
       loadedvsmodel$name <- vsmodelname
+      # convenience functions
+      loadedvsmodel$sim <- function(t1, t2, simfun = senseasim$cos) .similarity(t1, t2, loadedvsmodel, simfun)
+      loadedvsmodel$vectors <- function(...) .getvectors(loadedvsmodel, ...)
+      # add to list of loaded models
       .models_loaded[[length(.models_loaded)+1]] <<- loadedvsmodel
       names(.models_loaded)[[length(.models_loaded)]] <<- vsmodelname
       return(loadedvsmodel)
     }
-    return(.vsmodels[[vsmodelname]])
+    return(.models_loaded[[vsmodelname]])
   }
 
-  getvector_functions <- function(lazyloading = T, vsmodels = .models()) {
-    vector_functions <- sapply(names(vsmodels), function(vsmodelname) {
+  get_models <- function(lazyloading = T, vsmodels = .models_available()) {
+    m <- sapply(names(vsmodels), function(vsmodelname) {
       if(!lazyloading)
-        vsmodel <- .get(vsmodelname, vsmodels)
-      return(function(word_or_index){
+        vsmodel <- .getmodel(vsmodelname, vsmodels)
+      return(function(){
         if(lazyloading)
-          vsmodel <- .get(vsmodelname, vsmodels)
-        vector <- vsmodel$getvector(word_or_index)
-        if(!is.null(vector) && length(vector) > 0)
-          return(vector)
-        util$message(sprintf("Term '%s' not found in model '%s'.", word_or_index, vsmodelname))
-        return(NULL)
+          vsmodel <- .getmodel(vsmodelname, vsmodels)
+        return(vsmodel)
       })
     })
-    return(vector_functions)
+    return(m)
   }
 
 })

@@ -4,197 +4,134 @@ sensevectors <- new.env(parent = .GlobalEnv)
 with(sensevectors, {
 
   .defaults <- list(
-    vsm_model = 'en_100k_lsa',
+    vsmodelname = 'en_glove_6B_50d',
     topn_sense_terms = 5,
     shift_lambda = .5,
     senseinventoryname = 'en_jbtsense_stanfordNew_finer'
+    #senseinventoryname = 'cluster__glove_6B_50d__sim500cluster_cw'
   )
 
-  .senseinventories <- function() list(
-    #
-    en_jbtsense_stanfordNew_finer = function(term, POS, modelname = NA)
-      jbt$get_JBT_senses(
-        term, POS,
-        jbt_modelname = 'en_jbt_stanfordNew',
-        finer = T,
-        isas = F
-        ),
-    #
-    sim500cluster_cw = function(term, POS = NA, modelname)
-      wsi$induceby.simcluster.vsm(
-        term,
-        modelname = modelname,
-        topn.similar.terms = 500,
-        simfun = senseasim$cos,
-        simfun.name = 'cos',
-        simfun.issymmetric = T,
-        thresh = 0.66,
-        minsize = 0,
-        cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
-        cluster.fun.name = 'cw_nosingletons')$itemlists,
-    #
-    sim200cluster_cw = function(term, POS = NA, modelname)
-      wsi$induceby.simcluster.vsm(
-        term,
-        modelname = modelname,
-        topn.similar.terms = 200,
-        simfun = senseasim$cos,
-        simfun.name = 'cos',
-        simfun.issymmetric = T,
-        thresh = 0.72,
-        minsize = 0,
-        cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
-        cluster.fun.name = 'cw_nosingletons')$itemlists,
-    #
-    sim200cluster_cw_minsize5 = function(term, POS = NA, modelname)
-      wsi$induceby.simcluster.vsm(
-        term,
-        modelname = modelname,
-        topn.similar.terms = 200,
-        simfun = senseasim$cos,
-        simfun.name = 'cos',
-        simfun.issymmetric = T,
-        thresh = 0.72,
-        minsize = 5,
-        cluster.fun = function(X) { clust$cw(X, allowsingletons = T) },
-        cluster.fun.name = 'cw_singletons')$itemlists,
-    #
-    sim200cluster_cw_minsize3 = function(term, POS = NA, modelname)
-      wsi$induceby.simcluster.vsm(
-        term,
-        modelname = modelname,
-        topn.similar.terms = 200,
-        simfun = senseasim$cos,
-        simfun.name = 'cos',
-        simfun.issymmetric = T,
-        thresh = 0.5,
-        minsize = 3,
-        cluster.fun = function(X) { clust$cw(X, allowsingletons = T) },
-        cluster.fun.name = 'cw_singletons')$itemlists
-  )
+  .vsmodels <- list()
+  .inventories <- list()
 
-  init <- function() {
-    vsm$load_default_matrices(c(.defaults$vsm_model))
+  .init <- function() {
+    .vsmodels <<- vsm$get_models(lazyloading = T, vsmodels = vsm$.models_available())
+    .inventories <<- inventory$sense_functions(lazyloading = T, inventories = inventory$.inventories_available())
   }
 
-  get_sense_vectors <- function(term, POS, vsm_modelname = .defaults$vsm_model, senseinventoryname = .defaults$senseinventoryname, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
+  get_sense_vectors <- function(term, POS, vsmodelname = .defaults$vsmodelname, senseinventoryname = .defaults$senseinventoryname, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
     # prepare the result object
     R <- newEmptyObject()
     R$params <- as.list(match.call())
     R$status <- list()
 
-    model <- vsm$.models_loaded[[vsm_modelname]]
+    vsmodel <- .vsmodels[[vsmodelname]]()
+    sensefun <- .inventories[[senseinventoryname]]
+
     # prepare backup return values
-    R$v <- matrix(NA, ncol = 1, nrow = model$vdim, dimnames = list(NULL, paste0(term,'#')))
+    R$v <- matrix(NA, ncol = 1, nrow = vsmodel$vdim, dimnames = list(NULL, paste0(term,'#')))
     R$v_shift <- R$v
 
     # get the sense lists
-    senseinventoryfun <- .senseinventories()[[senseinventoryname]]
-    R$termSenseInventory <- senseinventoryfun(term, POS, vsm_modelname)
+    R$termSenseInventory <- sensefun(term, POS)
     R$nsenses <- length(R$termSenseInventory)
     R$status[[length(R$status)+1]] <- sprintf('found %d non-empty senses for term=\'%s#%s\'', R$nsenses, term, POS)
     util$message(R$status[[length(R$status)]])
 
     # make a proper index as dataframe, where we can e.g. select all entries from sense 2 with R$index[which(R$index$sense == 2),]
-    mterm <- model$transform(term)
+    mterm <- vsmodel$transform(term)
     mterm$original <- term
     mterm$original_clean <- term
     mterm$sense <- 0
-    mterm$unknown <- mterm$idx == model$unk$idx
+    mterm$unknown <- (mterm$term == vsmodel$unk$term)
     R$index <- data.frame(mterm, stringsAsFactors = F)
 
     # get the sub-matrix which contains the term vectors of all terms within the topn of the sense lists
     if(is.null(R$termSenseInventory) | length(R$termSenseInventory) < 1) {
-      # if sense inventory is empty make a warning
+      # if sense inventory is empty issue a warning
       R$status[[length(R$status)+1]] <- 'Attention: sense inventory is empty.'
       util$message(R$status[[length(R$status)]])
     }
 
     for(i in seq_along(R$termSenseInventory)) {
-      list_of_jb_terms <- R$termSenseInventory[[i]]
-      sense_terms <- list_of_jb_terms[1:min(length(list_of_jb_terms), topn_sense_terms)]
+      list_of_sense_terms <- R$termSenseInventory[[i]]
+      sense_terms <- list_of_sense_terms[1:min(length(list_of_sense_terms), topn_sense_terms)]
       # get the correct term representation for the current matrix
       for(sense_term in sense_terms) {
         sense_term_clean <- gsub('\\s+','', gsub('#.*','',gsub(':.*','',sense_term))) # clean terms, either isas (':') or senses ('#'), clear POS and remove whitespaces
-        mterm <- model$transform(sense_term_clean)
+        mterm <- vsmodel$transform(sense_term_clean)
         mterm$original <- sense_term
         mterm$original_clean <- sense_term_clean
         mterm$sense <- i
-        mterm$unknown <- mterm$idx == model$unk$idx
+        mterm$unknown <- (mterm$term == vsmodel$unk$term)
         R$index <- rbind(R$index, data.frame(mterm, stringsAsFactors = F))
       }
     }
 
-    # get unique term indices
+    # get unique terms
     R$unique_i <- which(!duplicated(R$index$idx))
     uniqueindex <- R$index[R$unique_i,]
-    uniqueindex <- uniqueindex[!uniqueindex$unknown,]
+    uniqueindex <- uniqueindex[!uniqueindex$unknown,] # remove unknowns
 
-    # if mapped sense inventory is empty we can't return anything
+    # if processed sense inventory is empty we can't return anything
     if(length(uniqueindex) <= 0) {
       R$status[[length(R$status)+1]] <- sprintf('No known sense terms for \'%s %s\'. Skip processing.', term, POS)
       util$message(R$status[[length(R$status)]])
       return(R)
     }
 
-    # get the submatrix (note: M contains row vectors)
-    M <- model$M[uniqueindex$idx,]
-    M <- matrix(M, nrow=ncol(model$M), dimnames = list(NULL, uniqueindex$mterm), byrow = T)
+    # get the vectors as submatrix
+    M <- vsmodel$vectors(uniqueindex$term)
 
     # get the submatrices for each sense and produce the sense vectors
-    R$v <- matrix(ncol = 0, nrow = nrow(M))
-    R$v_shift <- matrix(ncol = 0, nrow = nrow(M))
+    R$v <- matrix(nrow = 0, ncol = vsmodel$vdim)
+    R$v_shift <- matrix(nrow = 0, ncol = vsmodel$vdim)
     for(i in seq_len(R$nsenses)){
       # get the average vector
-      sterms <- unique(R$index$mterm[which(R$index$sense == i & !R$index$unknown)])
-      if(length(sterms) <= 0) {
+      sense_terms <- unique(R$index$term[which(R$index$sense == i & !R$index$unknown)])
+      if(length(sense_terms) <= 0) {
         R$status[[length(R$status)+1]] <- sprintf('No known sense terms for sense %d of \'%s %s\'. Producing NA vector.', i, term, POS)
         util$message(R$status[[length(R$status)]])
         return(R)
       }
-      s <- matrix(ncol=1, rowMeans(M[,sterms,drop=F]), byrow = T)
+      s <- matrix(nrow=1, colMeans(M[sense_terms,,drop=F]))
       # now shift
       if(shift_lambda <= 0){
-        # term vector has no influence
-        s_shift <- s
+        s_shift <- s # term vector has no influence
       }else{
-        # get the term vector
-        v <- M[,1,drop=F]
-        if(shift_lambda >= 1) {
-          # sense vector has no influence, replicate v
-          s_shift <- v
-        }else{
-          # otherwise apply the shift
-          s_shift <- (shift_lambda * v) + ((1-shift_lambda) * s)
-        }
+        v <- M[mterm$term,,drop=F] # get the term vector
+        if(shift_lambda >= 1)
+          s_shift <- v # sense vector has no influence, replicate v
+        else
+          s_shift <- (shift_lambda * v) + ((1-shift_lambda) * s) # otherwise apply the shift
       }
-      colnames(s) <- colnames(s_shift) <- paste0(term, '#', i, ':', paste0(sterms, collapse = ','))
-      R$v <- cbind(R$v, s)
-      R$v_shift <- cbind(R$v_shift, s_shift)
+      rownames(s) <- rownames(s_shift) <- paste0(term, '#', i, ':', paste0(sense_terms, collapse = ','))
+      R$v <- rbind(R$v, s)
+      R$v_shift <- rbind(R$v_shift, s_shift)
     }
     return(R)
   }
 
-  write_vectors_txt <- function(vectors, f=NULL){
+  io.write_vectors_txt <- function(vectors, f=NULL){
     if(is.null(f)){
       f <- stdout()
     }
     # lock
     lockfile <- if(is.character(f)) paste0(f, '.lock') else '~/stdout.lock'
     lck = flock::lock(lockfile)
-    for(name in colnames(vectors)){
-      cat(name, paste(vectors[,name], collapse=' '), '\n', file = f, fill = FALSE, append=TRUE)
+    for(name in rownames(vectors)){
+      cat(name, paste(vectors[name,], collapse=' '), '\n', file = f, fill = FALSE, append=TRUE)
     }
     # release lock
     flock::unlock(lck)
   }
 
-  get_and_write_sensevectors <- function(term, POS, fout) {
+  io.get_and_write_sensevectors <- function(term, POS, fout) {
     vectors <- get_sense_vectors(term, POS)$v_shift
-    write_vectors_txt(vectors, fout)
+    io.write_vectors_txt(vectors, fout)
   }
 
-  read_stdin <- function( lfun ) {
+  io.read_stdin <- function( lfun ) {
     input <- file('stdin', 'r')
     while(TRUE) {
       row <- readLines(input, n=1)
@@ -206,13 +143,13 @@ with(sensevectors, {
   }
 
   run <- function(inputfile=NULL, outputfile=NULL){
-    init()
+    .init()
     if(is.character(inputfile)) {
       words <- data.table::fread(inputfile, sep=' ', header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
       r <- lapply(seq_len(nrow(words)), function(i) {
         term <- words[i,1]
         POS <- words[i,2]
-        get_and_write_sensevectors(term, POS, outputfile)
+        io.get_and_write_sensevectors(term, POS, outputfile)
         return(T)
       })
     }
@@ -221,12 +158,12 @@ with(sensevectors, {
         row = strsplit(line,'\\s+',fixed = F)[[1]]
         term <- row[1]
         POS <- row[2]
-        get_and_write_sensevectors(term, POS, outputfile)
+        io.get_and_write_sensevectors(term, POS, outputfile)
       })
     }
   }
 
-  init_cluster <- function(cl, inputfile, outputfile) {
+  cluster.init <- function(cl, inputfile, outputfile) {
     words <<- data.table::fread(inputfile, sep=' ', header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
     parallel::clusterExport(cl, c('words','sensevectors'), envir = .GlobalEnv)
     parallel::clusterExport(cl, c('outputfile'), envir = environment())
@@ -234,12 +171,12 @@ with(sensevectors, {
     parallel::clusterEvalQ(cl, {
       # initialization actions
       local_outputfile <<- paste0(outputfile, Sys.getpid())
-      sensevectors$init()
+      sensevectors$.init()
       util$message(sprintf('saving to \'%s\'.', local_outputfile))
     })
   }
 
-  run_parallel <- function(inputfile, outputfile, cl = NULL) {
+  cluster.run <- function(inputfile, outputfile, cl = NULL) {
     # measure computing time
     tictoc::tic()
 
@@ -247,13 +184,13 @@ with(sensevectors, {
     cl <- if(is.null(cl)) { cclDef$make.default() } else{ cclDef$make.default(cl) }
 
     outputfile <- paste0(outputfile, format(Sys.time(), '%Y%m%d%H%M%S'))
-    init_cluster(cl, inputfile, outputfile)
+    cluster.init(cl, inputfile, outputfile)
 
     # apply in parallel
     r <- parallel::parLapply(cl, seq_len(nrow(words)), function(i) {
       term <- words[i,1]
       POS <- words[i,2]
-      get_and_write_sensevectors(term, POS, local_outputfile)
+      io.get_and_write_sensevectors(term, POS, local_outputfile)
       return(T)
     })
 
