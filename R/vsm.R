@@ -12,7 +12,8 @@ with(vsm, {
         unk = 'unknown',
         transformer = function(w) tolower(w)
       ),
-      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d', .as_column=F)
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d', .as_column=F),
+      getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d')
     ),
     en_glove_6B_50d_1K = list(
       lang = 'en',
@@ -21,7 +22,8 @@ with(vsm, {
         unk = 'the',
         transformer = function(w) tolower(w)
       ),
-      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d_1K', .as_column=F)
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d_1K', .as_column=F),
+      getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d_1K')
     )
   )
 
@@ -144,6 +146,13 @@ with(vsm, {
     return(newmodel)
   }
 
+  .txt.get_term <- function(idx, modelname) {
+    txtmodel <- .models_loaded[[modelname]]
+    if(idx < 1 && idx > length(txtmodel$vocab))
+      return(NA)
+    return(txtmodel$vocab[[idx]])
+  }
+
   .txt.get_vector <- function(term_or_idx, modelname, .as_column = F) {
     model <- .models_loaded[[modelname]]
     if(is.character(term_or_idx))
@@ -152,7 +161,7 @@ with(vsm, {
       if(term_or_idx > nrow(model$M) || term_or_idx < 1)
         mterm <- model$unk
       else
-        mterm <- list(term = model$vocab[[term_or_idx]], idx = term_or_idx)
+        mterm <- list(term = model$term(term_or_idx), idx = term_or_idx)
     }
 
     # get the vector
@@ -205,6 +214,7 @@ with(vsm, {
       loadedvsmodel <- vsmodel$init()
       loadedvsmodel$lang <- vsmodel$lang
       loadedvsmodel$vector <- vsmodel$getvector
+      loadedvsmodel$term <- vsmodel$getterm
       loadedvsmodel$name <- vsmodelname
       # convenience functions
       loadedvsmodel$sim <- function(t1, t2, simfun = senseasim$cos) .similarity(t1, t2, loadedvsmodel, simfun)

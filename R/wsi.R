@@ -12,29 +12,18 @@ with(wsi, {
   #'
   #' @return a dataframe with similarity values and indexes in modelname
   #'
-  vs.similarities <- function(term, modelname, simfun = senseasim$cos, simfun.name = 'cos') {
-    message(sprintf('[%s-%d-%s]: Preparing similarity values for term \'%s\' and matrix \'%s\'. ', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), term, modelname))
-    model <- vsm$.models_loaded[[modelname]]
-    if(is.integer(term)) {
-      mterm <- model$vocab[[term]]
-      idx <- term
-    } else {
-      mterm <- model$transform(term)
-      idx <- mterm$idx
-      mterm <- mterm$mterm
-    }
+  vs.similarities <- function(term_or_idx, vsmodel, simfun = senseasim$cos, simfun.name = 'cos') {
+    util$message(sprintf('Preparing similarity values for term \'%s\' and matrix \'%s\'. ', term_or_idx, vsmodel$name))
 
-    fname <- cache$get_filename(mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', modelname, '__', simfun.name, '__'))
+    fname <- cache$get_filename(term_or_idx, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', vsmodel$name, '__', simfun.name, '__'))
     sim <- cache$load(filename = fname, computefun = function() {
       # get top n most similar words in terms of
-      v <- model$M[idx,]
-      sim <- sapply(seq_len(nrow(model$M)), function(i) simfun(model$M[i,], v))
-      # free some memory
-      rm(v)
+      v <- vsmodel$vector(term_or_idx)
+      sim <- sapply(seq_len(length(vsmodel$vocab)), function(i) simfun(vsmodel$vector(i), v))
       # order the result and store the dataframe
       ordr <- order(sim, decreasing = T) # gets the indexes
       sim <- sim[ordr]
-      names(sim) <- model$vocab[ordr]
+      names(sim) <- lapply(ordr, vsmodel$term)
       sim <- as.data.frame(sim)
       sim$idx <- ordr
       return(sim)
@@ -45,35 +34,30 @@ with(wsi, {
   #'
   #'
   #'
-  vs.similarity.matrix <- function(terms, modelname, n = 500, identifier = NULL, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T){
-    model <- vsm$.models_loaded[[modelname]]
+  vs.similarity.matrix <- function(terms, vsmodel, n = 500, identifier = NULL, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T){
     n <- min(n, if (is.array(terms) || is.data.frame(terms)) nrow(terms) else length(terms))
     terms <- terms[1:n]
-    if(is.integer(terms)) {
-      idx <- terms
-    } else {
-      idx <- sapply(terms, function(term) model$transform(term)$idx)
-    }
 
-    if(is.null(identifier)) {
+    if(is.null(identifier))
       identifier <- digest::digest(terms)
-    }
-    util$message(sprintf('Preparing similarity matrix of %s terms for \'%s\' based on matrix \'%s\'. ', n, identifier, modelname))
 
-    fname <- cache$get_filename(identifier, '', dirname = cache$data_temp_dir(), prefix = paste0('simmat__', modelname, '__', simfun.name,  '__n', n, '__'))
+    util$message(sprintf('Preparing similarity matrix of %s terms for \'%s\' based on matrix \'%s\'. ', n, identifier, vsmodel$name))
+
+    fname <- cache$get_filename(identifier, '', dirname = cache$data_temp_dir(), prefix = paste0('simmat__', vsmodel$name, '__', simfun.name,  '__n', n, '__'))
+    M <- vsmodel$vectors(terms)
     SIM <- cache$load(filename = fname, computefun = function() {
       if(simfun.issymmetric) {
         i <- seq_len(n-1)
         # compute only lower triangular matrix
-        SIM <- as.matrix(sapply(i, function(k) { v_k <- model$M[idx[[k]],]; c(rep(NA, k), sapply(seq(k+1,n), function(l) { v_l <- model$M[idx[[l]],]; simfun(v_k, v_l) } )) } ))
+        SIM <- as.matrix(sapply(i, function(k) { v_k <- M[k,]; c(rep(NA, k), sapply(seq(k+1,n), function(l) { v_l <- M[l,]; simfun(v_k, v_l) } )) } ))
         diag(SIM) <- 1 # set diagonal entries to 1
         SIM <- cbind(SIM,rep(1,n)) # add last column vector
         SIM[upper.tri(SIM)] <- t(SIM)[upper.tri(SIM)] # copy lower triangle to upper triangle in the right order!
       }else{
-        SIM <- as.matrix(sapply(seq_len(n), function(k) { v_k <- model$M[idx[[k]],]; sapply(seq_len(n), function(l) { v_l <- model$M[idx[[l]],]; simfun(v_k, v_l) } ) } ))
+        SIM <- as.matrix(sapply(seq_len(n), function(k) { v_k <- M[k,]; sapply(seq_len(n), function(l) { v_l <- M[l,]; simfun(v_k, v_l) } ) } ))
       }
       # set names
-      rownames(SIM) <- model$vocab[idx]
+      rownames(SIM) <- rownames(M)
       colnames(SIM) <- rownames(SIM)
       return(SIM)
     })
@@ -83,22 +67,20 @@ with(wsi, {
   #'
   #' get a similarity graph based on transitivity
   #'
-  similarity.graph.transitive <- function(term, modelname, n = 200, m = 50, simfun = senseasim$cos, simfun.name = 'cos'){
-    model <- vsm$.models_loaded[[modelname]]
-    n <- min(n, nrow(model$M))
-    m <- min(m, nrow(model$M))
+  similarity.graph.transitive <- function(term, vsmodel, n = 200, m = 50, simfun = senseasim$cos, simfun.name = 'cos') {
+    n <- min(n, length(vsmodel$vocab))
+    m <- min(m, length(vsmodel$vocab))
 
-    mterm <- model$transform(term)
-    util$message(sprintf('Preparing similarity graph of top %s most similar terms for term \'%s\' and matrix \'%s\' and expand by the top %s most similar terms.', n, term, modelname, m))
-    fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('simgraphtrans__', modelname, '__', simfun.name,  '__n', n, '__m', m, '__'))
+    util$message(sprintf('Preparing similarity graph of top %s most similar terms for term \'%s\' and matrix \'%s\' and expand by the top %s most similar terms.', n, term, vsmodel$name, m))
+    fname <- cache$get_filename(term, '', dirname = cache$data_temp_dir(), prefix = paste0('simgraphtrans__', vsmodel$name, '__', simfun.name,  '__n', n, '__m', m, '__'))
 
     A <- cache$load(filename = fname, computefun = function() {
-      # get n most simialar terms to mterm
-      sim1 <- wsi$vs.similarities(mterm$idx, modelname, simfun = simfun, simfun.name = simfun.name)
+      # get n most simialar terms to term
+      sim1 <- wsi$vs.similarities(term, vsmodel, simfun = simfun, simfun.name = simfun.name)
       sim1 <- sim1[1:n,]
 
       # for each similar word compute top m transitive similarities
-      simtrans <- lapply( seq_len(n), function(i) wsi$vs.similarities(sim1[i,]$idx, modelname, simfun = simfun, simfun.name = simfun.name)[1:m,] )
+      simtrans <- lapply( seq_len(n), function(i) wsi$vs.similarities(sim1[i,]$idx, vsmodel, simfun = simfun, simfun.name = simfun.name)[1:m,] )
 
       # prepare adjacency matrix, measure intersection of elements in transitive sims
       # TODO: try different values, e.g. average cosine? cosine of average vector?
@@ -126,11 +108,11 @@ with(wsi, {
   #'
   #' induce senses by clustering the similarity matrix
   #'
-  induceby.simcluster.jbt <- function(term, POS, jbtmodelname, vsmodelname, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
-    fname <- cache$get_filename(term, POS, dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterjbt__', jbtmodelname, '__', vsmodelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
+  induceby.simcluster.jbt <- function(term, POS, jbtmodel, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+    fname <- cache$get_filename(term, POS, dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterjbt__', jbtmodel$name, '__', vsmodelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
-      sims <- jbt$get_JBT_similarities(term=term, POS=POS, jbt_modelname=jbtmodelname)
-      result <- induceby.simcluster.terms(terms=sims$term, modelname=vsmodelname, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
+      sims <- jbtmodel$sim(term=term, POS=POS)
+      result <- induceby.simcluster.terms(terms=sims$term, vsmodel=vsmodel, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
       return(result)
     })
     if(is.numeric(minsize) & minsize > 1){
@@ -142,14 +124,12 @@ with(wsi, {
   #'
   #' induce senses by clustering the similarity matrix
   #'
-  induceby.simcluster.vsm <- function(term, modelname, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
-    model <- vsm$.models_loaded[[modelname]]
-    mterm <- model$transform(term)
-    fname <- cache$get_filename(mterm$mterm, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclustervsm__', modelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
+  induceby.simcluster.vsm <- function(term, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+    fname <- cache$get_filename(term, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclustervsm__', vsmodel$name, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
-      sims <- vs.similarities(mterm$mterm, modelname, simfun = simfun, simfun.name = simfun.name)
+      sims <- vs.similarities(term, vsmodel, simfun = simfun, simfun.name = simfun.name)
       sims <- sims[1:topn.similar.terms,]
-      result <- induceby.simcluster.terms(terms=sims$idx, modelname=modelname, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
+      result <- induceby.simcluster.terms(terms=rownames(sims), modelname=modelname, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
       return(result)
     })
     if(is.numeric(minsize) & minsize > 1){

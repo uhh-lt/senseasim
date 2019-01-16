@@ -12,23 +12,7 @@ with(jbt, {
   .sense_urlpattern='http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/${model}/jo/senses/${term}%23${pos}&format=json&sensetype=CW'
   .sense_fine_urlpattern='http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/${model}/jo/senses/${term}%23${pos}?format=json&sensetype=CW-finer'
 
-  .get_jbt_url = function(pattern, model, term, pos)
-    return(stringr::str_interp(pattern))
-
-  .modelnames_for_lang <- function(lang) {
-    matching_models <- grep(paste0('^',lang,'_'), names(.jbt_models), value=T)
-    return(matching_models)
-  }
-
-  .get_best_modelname_for_lang <- function(lang) {
-    matching_models <- .modelnames_for_lang(lang)
-    if(length(matching_models) > 0){
-      return(matching_models[[1]])
-    }
-    return(NULL)
-  }
-
-  .jbt_models <- list(
+  .jbt_models_available <- list(
     en_jbt_stanfordNew = list(lang = 'en', name = 'stanfordNew', sensemodel = T, finersensemodel = T),
     en_jbt_stanfordContext = list(lang = 'en', name = 'stanfordContext', sensemodel = F, finersensemodel = F),
     en_jbt_wikipediaStanford = list(lang = 'en', name = 'wikipediaStanford', sensemodel = F, finersensemodel = F),
@@ -64,6 +48,22 @@ with(jbt, {
     tr_jbt_turkishTrigram = list(lang = 'tr', name = 'turkishTrigram', sensemodel = F, finersensemodel = F)
   )
 
+  .get_jbt_url = function(pattern, model, term, pos)
+    return(stringr::str_interp(pattern))
+
+  .modelnames_for_lang <- function(lang) {
+    matching_models <- grep(paste0('^',lang,'_'), names(.jbt_models_available), value=T)
+    return(matching_models)
+  }
+
+  .get_best_modelname_for_lang <- function(lang) {
+    matching_models <- .modelnames_for_lang(lang)
+    if(length(matching_models) > 0){
+      return(matching_models[[1]])
+    }
+    return(NULL)
+  }
+
   #'
   #' Helper function to convert POS tags to JBT POS tags
   #'
@@ -94,19 +94,35 @@ with(jbt, {
                 )))
   }
 
+  .get_json_from_url = function(url){
+    tryCatch(
+      expr = {
+        # get from api
+       util$message(sprintf('querying  \'%s\'.', url))
+        # try to fetch and read json document
+        js_doc <- jsonlite::fromJSON(txt = url)
+        return(js_doc)
+      },
+      error = function(cond) {
+        util$message(sprintf('ERROR retrieving \'%s\': %s', url, cond))
+        return(NULL)
+      }
+    )
+  }
+
   #'
   #'
   #'
-  get_JBT_similarities <- function(term, POS = NA, jbt_modelname = names(.jbt_models)[[1]]) {
+  .get_JBT_similarities <- function(term, POS = NA, jbt_modelname) {
     if(is.na(POS)) POS <- 'N'
-    model = .jbt_models[[jbt_modelname]]
+    model = models[[jbt_modelname]]
     jbtPOS <- .convertToJbtPOS(POS)
 
     # get from temp dir if existent
     fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsimapi__', jbt_modelname, '__'))
     js_doc <- cache$load(filename = fname, computefun = function() {
       url <- .get_jbt_url(.sim_urlpattern, model$name, term, jbtPOS)
-      get_json_from_url(url)
+      .get_json_from_url(url)
     })
 
     if (!is.null(js_doc)) {
@@ -119,28 +135,12 @@ with(jbt, {
     return(list())
   }
 
-  get_json_from_url = function(url){
-    tryCatch(
-      expr = {
-        # get from api
-        message(sprintf('[%s-%d-%s] querying  \'%s\'.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), url))
-        # try to fetch and read json document
-        js_doc <- jsonlite::fromJSON(txt = url)
-        return(js_doc)
-      },
-      error = function(cond) {
-        message(sprintf('[%s-%d-%s] ERROR retrieving \'%s\': %s', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), url, cond))
-        return(NULL)
-      }
-    )
-  }
-
   #'
   #'
   #'
-  get_JBT_senses <- function(term, POS = NA, jbt_modelname = names(.jbt_models)[[1]], finer=T, isas = F) {
+  .get_JBT_senses <- function(term, POS = NA, finer=T, isas = F, jbt_modelname) {
     if(is.na(POS)) POS <- 'N'
-    model = .jbt_models[[jbt_modelname]]
+    model <- models[[jbt_modelname]]
     jbtPOS <- .convertToJbtPOS(POS)
     fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsenseapi', if(finer) 'finer' else '' ,'__', jbt_modelname, '__'))
     json_doc <- cache$load(fname, function() {
@@ -149,7 +149,7 @@ with(jbt, {
       }else{
         url <- .get_jbt_url(.sense_urlpattern, model$name, term, jbtPOS)
       }
-      get_json_from_url(url)
+      .get_json_from_url(url)
     })
 
     if (!is.null(json_doc)) {
@@ -164,5 +164,15 @@ with(jbt, {
     # else
     return(list())
   }
+
+  .getmodel <- function(jbtmodelname){
+    jbtmodel <- .jbt_models_available[[jbtmodelname]]
+    jbtmodel$sim <- function(term, POS = NA) .get_JBT_similarities(term, POS, jbtmodelname)
+    jbtmodel$senses <- function(term, POS = NA, finer=T, isas = F) .get_JBT_senses(term, POS, finer, isas, jbtmodelname)
+    jbtmodel$name <- jbtmodelname
+    return(jbtmodel)
+  }
+
+  models <- lapply(names(.jbt_models_available), .getmodel)
 
 }) # end with(...)
