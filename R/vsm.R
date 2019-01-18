@@ -58,7 +58,31 @@ with(vsm, {
       ),
       getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d_1K'),
       getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d_1K')
+    ),
+    #
+    #
+    #
+    en_lsa_100k = list(
+      lang = 'en',
+      init = function() .rda.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/lsafun/EN_100k.rda'),
+        unk = 'unknown',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_lsa_100k'),
+      getterm = function(index) .txt.get_term(index, 'en_lsa_100k')
+    ),
+    en_lsa_100k_hal = list(
+      lang = 'en',
+      init = function() .rda.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/lsafun/EN_100k_lsa.rda'),
+        unk = 'unknown',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_lsa_100k_hal'),
+      getterm = function(index) .txt.get_term(index, 'en_lsa_100k_hal')
     )
+    #
   )
 
   .modelnames_for_lang <- function(lang) {
@@ -74,7 +98,91 @@ with(vsm, {
     return(NULL)
   }
 
-  .txt.build_bigmatrix_from_txt <- function(filename, separator = ' ') {
+  .rda.build_bigmatrix <- function(filename) {
+    # get the filenames
+    bckngpath <- dirname(filename)
+    bckngfile <- paste0(basename(filename), '.bin')
+    bckngdesc <- paste0(bckngfile, '.desc')
+    bckngrownames <- file.path(bckngpath, paste0(bckngfile, '.rownames'))
+    lockfile <- file.path(bckngpath, paste0(bckngfile, '.lock'))
+    lock__ <- flock::lock(lockfile)
+
+    util$message(sprintf('Trying to convert Vector Space Matrix: \n  input: \'%s\' \n  path:  \'%s\' \n  bin:   \'%s\'  \n  desc:  \'%s\' ', filename, bckngpath, bckngfile, bckngdesc))
+
+    if(file.exists(file.path(bckngpath, bckngdesc))) {
+      util$message('Descriptor file exists. Skipping.')
+      flock::unlock(lock__)
+      return(T)
+    }
+
+    if(!file.exists(filename)) {
+      util$message('Input file does not exist. Aborting.')
+      flock::unlock(lock__)
+      return(F)
+    }
+
+    # read matrix, convert to bigmatrix and store descriptor and binary backing file
+    tictoc::tic('Elapsed')
+    tictoc::tic('Finished loading.')
+
+    util$message(sprintf('Loading...'))
+
+    matrixenv <- new.env()
+    load(file = filename, envir = matrixenv)
+    matrixname <- ls(matrixenv)[[1]]
+    vocab <- rownames(matrixenv[[matrixname]])
+    rownames(matrixenv[[matrixname]]) <- NULL
+    colnames(matrixenv[[matrixname]]) <- NULL
+
+    tictoc::toc()
+    util$message(sprintf('Data size: %s', format(object.size(matrixenv), units = "auto")))
+    message('Memory usage:')
+    print.table(gc(reset=T)) # show some memory usage
+
+    tictoc::tic('Finished converting.')
+    util$message('Converting to bigmatrix...')
+    bm <- bigmemory::as.big.matrix(matrixenv[[matrixname]], backingfile = bckngfile, backingpath = bckngpath, descriptorfile = bckngdesc, shared = T)
+    # save vocabulary file
+    writeLines(vocab, bckngrownames)
+    tictoc::toc()
+
+    # make some assertions
+    assertthat::are_equal(length(vocab), nrow(bm))
+
+    # free memory
+    rm(matrixenv)
+    message('Memory usage:')
+    print.table(gc(reset=T)) # show some memory usage
+    tictoc::toc()
+
+    flock::unlock(lock__)
+    return(T)
+  }
+
+  .rda.load_matrix <- function(filelocation, unk, transformer) {
+    # bigmatrix descriptorfile
+    fdesc <- paste0(filelocation,'.bin.desc')
+
+    if(!file.exists(fdesc)) {
+      if(!.rda.build_bigmatrix(filelocation)){
+        util$message(sprintf('Loading Vector Space Matrix from rda file \'%s\' failed, file does not exists.', fdesc))
+        return(F)
+      }
+    }
+
+    # else read vector space matrix as bigmatrix
+    util$message(sprintf('loading rda Vector Space Matrix \'%s\'', filelocation))
+    newmodel <- newEmptyObject()
+    newmodel$M <- bigmemory::attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc))
+    newmodel$vocab <- readLines(gsub('[.]desc$', '.rownames', fdesc))
+    assertthat::are_equal(nrow(newmodel$M), length(newmodel$vocab))
+    newmodel$unk <- list(term = unk, idx = which(newmodel$vocab == unk))
+    newmodel$transform <- function(term) { .txt.get_vocabulary_term(term, transformer, newmodel) }
+    newmodel$vdim <- ncol(newmodel$M)
+    return(newmodel)
+  }
+
+  .txt.build_bigmatrix <- function(filename, separator = ' ') {
     # get the filenames
     bckngpath <- dirname(filename)
     bckngfile <- paste0(basename(filename), '.bin')
@@ -162,14 +270,14 @@ with(vsm, {
     fdesc <- paste0(filelocation,'.bin.desc')
 
     if(!file.exists(fdesc)) {
-      if(!.txt.build_bigmatrix_from_txt(filelocation)){
+      if(!.txt.build_bigmatrix(filelocation)){
         util$message(sprintf('Loading Vector Space Matrix from text file \'%s\' failed, file does not exists.', fdesc))
         return(F)
       }
     }
 
     # else read vector space matrix as bigmatrix
-    util$message(sprintf('loading FastText Vector Space Matrix \'%s\'', filelocation))
+    util$message(sprintf('loading Vector Space Matrix from text file \'%s\'', filelocation))
     newmodel <- newEmptyObject()
     newmodel$M <- bigmemory::attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc))
     newmodel$vocab <- readLines(gsub('[.]desc$', '.rownames', fdesc))
@@ -248,7 +356,7 @@ class FastTextEmbedding(object):
 ")
 
     # else read vector space matrix as pyfasttext object
-    util$message(sprintf('loading Vector Space Matrix \'%s\'', filelocation))
+    util$message(sprintf('loading FastText Vector Space Matrix \'%s\'', filelocation))
     newmodel <- newEmptyObject()
     newmodel$py <- FastTextEmbedding(filelocation, T)
     newmodel$py$load()
