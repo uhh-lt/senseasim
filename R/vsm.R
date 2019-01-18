@@ -2,7 +2,15 @@ vsm <- new.env(parent = .GlobalEnv)
 
 with(vsm, {
 
+  models <- list()
+
   .models_loaded <- list()
+
+  .init <- function(){
+    models_available <- .models_available()
+    models <<- .get_models(T, models_available)
+    # names(models) <<- names(models_available)
+  }
 
   .models_available <- function() list(
     en_glove_6B_50d = list(
@@ -227,7 +235,7 @@ with(vsm, {
     return(.models_loaded[[vsmodelname]])
   }
 
-  get_models <- function(lazyloading = T, vsmodels = .models_available()) {
+  .get_models <- function(lazyloading = T, vsmodels = .models_available()) {
     m <- sapply(names(vsmodels), function(vsmodelname) {
       if(!lazyloading)
         vsmodel <- .getmodel(vsmodelname, vsmodels)

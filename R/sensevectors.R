@@ -3,6 +3,11 @@ sensevectors <- new.env(parent = .GlobalEnv)
 
 with(sensevectors, {
 
+  .init <- function() {
+    vsm$.init()
+    inventory$.init()
+  }
+
   .defaults <- list(
     vsmodelname = 'en_glove_6B_50d',
     topn_sense_terms = 5,
@@ -10,14 +15,6 @@ with(sensevectors, {
     senseinventoryname = 'en_jbtsense_stanfordNew_finer'
     #senseinventoryname = 'cluster__glove_6B_50d__sim500cluster_cw'
   )
-
-  .vsmodels <- list()
-  .inventories <- list()
-
-  .init <- function() {
-    .vsmodels <<- vsm$get_models(lazyloading = T, vsmodels = vsm$.models_available())
-    .inventories <<- inventory$sense_functions(lazyloading = T, inventories = inventory$.inventories_available())
-  }
 
   get_sense_vectors <- function(term, POS, vsmodelname = .defaults$vsmodelname, senseinventoryname = .defaults$senseinventoryname, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
     # prepare the result object

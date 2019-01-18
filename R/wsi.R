@@ -109,7 +109,7 @@ with(wsi, {
   #' induce senses by clustering the similarity matrix
   #'
   induceby.simcluster.jbt <- function(term, POS, jbtmodel, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
-    fname <- cache$get_filename(term, POS, dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterjbt__', jbtmodel$name, '__', vsmodelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
+    fname <- cache$get_filename(term, POS, dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterjbt__', jbtmodel$name, '__', vsmodel$name, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       sims <- jbtmodel$sim(term=term, POS=POS)
       result <- induceby.simcluster.terms(terms=sims$term, vsmodel=vsmodel, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
@@ -142,13 +142,12 @@ with(wsi, {
   #'
   #' induce senses by clustering the similarity matrix of 'terms'
   #'
-  induceby.simcluster.terms <- function(terms, modelname, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
-    model <- vsm$.models_loaded[[modelname]]
+  induceby.simcluster.terms <- function(terms, vsmodel, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
     desc <- digest::digest(terms)
-    fname <- cache$get_filename(desc, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterterms__', modelname, '__', simfun.name, '__', thresh, '__', cluster.fun.name, '__'))
+    fname <- cache$get_filename(desc, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterterms__', vsmodel$name, '__', simfun.name, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       n <- if (is.array(terms) || is.data.frame(terms)) nrow(terms) else length(terms)
-      SIM <- vs.similarity.matrix(terms, modelname, n = n, identifier = desc, simfun = simfun, simfun.name = simfun.name, simfun.issymmetric = simfun.issymmetric)
+      SIM <- vs.similarity.matrix(terms, vsmodel, n = n, identifier = desc, simfun = simfun, simfun.name = simfun.name, simfun.issymmetric = simfun.issymmetric)
       # prune by threshold, i.e. everything below will be set to zero
       SIM[which(SIM < thresh)] <- 0
       labels <- cluster.fun(SIM)

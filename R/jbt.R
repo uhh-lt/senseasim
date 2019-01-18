@@ -8,11 +8,19 @@ jbt <- new.env(parent = .GlobalEnv)
 
 with(jbt, {
 
+  models <- list()
+
+  .init <- function(){
+    models_available <- .jbt_models_available()
+    models <<- lapply(names(models_available), .getmodel)
+    names(models) <<- names(models_available)
+  }
+
   .sim_urlpattern='http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/${model}/jo/similar/${term}%23${pos}?numberOfEntries=1000&format=json'
   .sense_urlpattern='http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/${model}/jo/senses/${term}%23${pos}&format=json&sensetype=CW'
   .sense_fine_urlpattern='http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/${model}/jo/senses/${term}%23${pos}?format=json&sensetype=CW-finer'
 
-  .jbt_models_available <- list(
+  .jbt_models_available <- function() list(
     en_jbt_stanfordNew = list(lang = 'en', name = 'stanfordNew', sensemodel = T, finersensemodel = T),
     en_jbt_stanfordContext = list(lang = 'en', name = 'stanfordContext', sensemodel = F, finersensemodel = F),
     en_jbt_wikipediaStanford = list(lang = 'en', name = 'wikipediaStanford', sensemodel = F, finersensemodel = F),
@@ -52,7 +60,7 @@ with(jbt, {
     return(stringr::str_interp(pattern))
 
   .modelnames_for_lang <- function(lang) {
-    matching_models <- grep(paste0('^',lang,'_'), names(.jbt_models_available), value=T)
+    matching_models <- grep(paste0('^',lang,'_'), names(.jbt_models_available()), value=T)
     return(matching_models)
   }
 
@@ -166,14 +174,11 @@ with(jbt, {
   }
 
   .getmodel <- function(jbtmodelname){
-    jbtmodel <- .jbt_models_available[[jbtmodelname]]
+    jbtmodel <- .jbt_models_available()[[jbtmodelname]]
     jbtmodel$sim <- function(term, POS = NA) .get_JBT_similarities(term, POS, jbtmodelname)
     jbtmodel$senses <- function(term, POS = NA, finer=T, isas = F) .get_JBT_senses(term, POS, finer, isas, jbtmodelname)
     jbtmodel$name <- jbtmodelname
     return(jbtmodel)
   }
-
-  models <- lapply(names(.jbt_models_available), .getmodel)
-  names(models) <- names(.jbt_models_available)
 
 }) # end with(...)

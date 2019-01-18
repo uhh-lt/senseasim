@@ -2,31 +2,40 @@ inventory <- new.env(parent = .GlobalEnv)
 
 with(inventory, {
 
+  models <- list()
+
   .inventories_loaded <- list()
+
+  .init <- function(){
+    vsm$.init()
+    jbt$.init()
+    models_available <- c(.inventories_available(), .generate_from_jbtmodels())
+    models <<- .get_models(T, models_available)
+  }
 
   .inventories_available <- function() list(
     #
-    #
     en_jbtsense_stanfordNew_finer = list(
       lang = 'en',
-      init = function() {},
+      init = function() { },
       senses = function(term, POS) jbt$models[['en_jbt_stanfordNew']]$senses(term, POS, finer = T, isas = F)
     ),
     #
     en_jbtsense_stanfordNew = list(
       lang = 'en',
-      init  = function() {},
+      init  = function() { },
       senses = function(term, POS) jbt$models[['en_jbt_stanfordNew']]$senses(term, POS, finer = F, isas = F)
     ),
     #
     #
+    #
     cluster__glove_6B_50d__sim500cluster_cw = list(
       lang = 'en',
-      init = function() vsm$load_default_matrices(models_to_load = list('glove_6B_50d')),
+      init = function() { },
       senses = function(term, POS = NA)
         wsi$induceby.simcluster.vsm(
           term,
-          modelname = 'en_glove_6B_50d',
+          vsmodel = vsm$models[['en_glove_6B_50d']](),
           topn.similar.terms = 500,
           simfun = senseasim$cos,
           simfun.name = 'cos',
@@ -39,11 +48,11 @@ with(inventory, {
     #
     cluster__EN_100k_lsa__sim500cluster_cw = list(
       lang = 'en',
-      init = function() vsm$load_default_matrices(models_to_load = list('en_100k_lsa')),
+      init = function() { },
       senses = function(term, POS = NA)
         wsi$induceby.simcluster.vsm(
           term,
-          modelname = 'en_100k_lsa',
+          vsmodel = vsm$models[['en_100k_lsa']](),
           topn.similar.terms = 500,
           simfun = senseasim$cos,
           simfun.name = 'cos',
@@ -53,6 +62,7 @@ with(inventory, {
           cluster.fun = function(X) { clust$cw(X, allowsingletons = F, remove_self_loops = T) },
           cluster.fun.name = 'cw_nosingletons')$itemlists
     ),
+    #
     #
     #
     dummy = list(
@@ -67,27 +77,13 @@ with(inventory, {
     return(NULL)
   }
 
-  .get <- function(inventoryname, inventories = .inventories_available()) {
-    if(!(inventoryname %in% names(.inventories_loaded))){
-      loadedinventory <- inventories[[inventoryname]]
-      loadedinventory$init()
-      loadedinventory$name <- inventoryname
-      .inventories_loaded[[length(.inventories_loaded)+1]] <<- loadedinventory
-      names(.inventories_loaded)[[length(.inventories_loaded)]] <<- inventoryname
-      return(loadedinventory)
-    }
-    return(.inventories_loaded[[inventoryname]])
-  }
-
   .generate_from_jbtmodels <- function() {
-    vsmodelname <- 'glove_6B_50d'
-    vsmodels <- vsm$get_models()
-    vsmodel <- vsmodels[[vsmodelname]]()
+    vsmodelname <- 'en_glove_6B_50d'
+    vsmodel <- vsm$models[[vsmodelname]]
     # generate jbt models that have sense models
-    result <- lapply(names(jbt$.models), function(jbtmodelname) {
+    result <- lapply(names(jbt$models), function(jbtmodelname) {
       inventories_for_jbtmodel <- list()
-      jbtmodel <- jbt$.models[[jbtmodelname]]
-      print(jbtmodelname)
+      jbtmodel <- jbt$models[[jbtmodelname]]
       # finer senses if available
       if(jbtmodel$finersensemodel){
         newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbtsense_${jbtmodel$name}_finer')
@@ -103,21 +99,21 @@ with(inventory, {
         newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbtsense_${jbtmodel$name}')
         newjbtinventory <- list(
           lang = jbtmodel$lang,
-          init = function() {},
+          init = function() { },
           senses = function(term, POS) jbtmodel$senses(term, POS, finer = F, isas = F)
         )
         inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
       }
       # senses by clustering jbt similar terms 'cluster__glove_6B_50d__sim500cluster_cw'
-      newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbt_${jbtmodel$name}__${vsmodel$name}__sim500cluster_mcl')
+      newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbt_${jbtmodel$name}__${vsmodelname}__sim500cluster_mcl')
       newjbtinventory <- list(
         lang = jbtmodel$lang,
-        init = function() {  },
+        init = function() { },
         senses = function(term, POS) wsi$induceby.simcluster.jbt(
           term = term,
           POS = POS,
           jbtmodel = jbtmodel,
-          vsmodel = vsmodel,
+          vsmodel = vsmodel(),
           topn.similar.terms = 500,
           simfun = senseasim$cos,
           simfun.name = 'cos',
@@ -134,24 +130,29 @@ with(inventory, {
     return(result)
   }
 
-  #'
-  #'
-  #'
-  sense_functions <- function(lazyloading = T, inventories = .inventories_available()) {
-    sense_functions <- sapply(names(inventories), function(inventoryname) {
+  .get <- function(inventoryname, inventories = .inventories_available()) {
+    if(!(inventoryname %in% names(.inventories_loaded))){
+      loadedinventory <- inventories[[inventoryname]]
+      loadedinventory$init()
+      loadedinventory$name <- inventoryname
+      .inventories_loaded[[length(.inventories_loaded)+1]] <<- loadedinventory
+      names(.inventories_loaded)[[length(.inventories_loaded)]] <<- inventoryname
+      return(loadedinventory)
+    }
+    return(.inventories_loaded[[inventoryname]])
+  }
+
+  .get_models <- function(lazyloading = T, inventories = .inventories_available()) {
+    models <- sapply(names(inventories), function(inventoryname) {
       if(!lazyloading)
-        inventory <- .get(inventoryname, inventories)
-      return(function(word, POS = NA){
+        model <- .get(inventoryname, inventories)
+      return(function(){
         if(lazyloading)
-          inventory <- .get(inventoryname, inventories)
-        senselist <- inventory$senses(word, POS)
-        if(!is.null(senselist) && length(senselist) > 0)
-          return(senselist)
-        util$message(sprintf("Term '%s' not found in inventory '%s'.", word, inventoryname))
-        return(NULL)
+          model <- .get(inventoryname, inventories)
+        return(model)
       })
     })
-    return(sense_functions)
+    return(models)
   }
 
 })
