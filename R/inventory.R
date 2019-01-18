@@ -6,11 +6,15 @@ with(inventory, {
 
   .inventories_loaded <- list()
 
-  .init <- function(){
-    vsm$.init()
-    jbt$.init()
-    models_available <- c(.inventories_available(), .generate_from_jbtmodels())
-    models <<- .get_models(T, models_available)
+  .INITIALIZED <- F
+  .init <- function(reinitialize = F) {
+    if(!.INITIALIZED || reinitialize){
+      vsm$.init()
+      jbt$.init()
+      models_available <- c(.inventories_available(), .generate_from_jbtmodels())
+      models <<- .get_models(T, models_available)
+      .INITIALIZED <- T
+    }
   }
 
   .inventories_available <- function() list(
@@ -18,13 +22,13 @@ with(inventory, {
     en_jbtsense_stanfordNew_finer = list(
       lang = 'en',
       init = function() { },
-      senses = function(term, POS) jbt$models[['en_jbt_stanfordNew']]$senses(term, POS, finer = T, isas = F)
+      senses = function(term, POS) jbt$models[['en_jbt_stanfordNew']]()$senses(term, POS, finer = T, isas = F)
     ),
     #
     en_jbtsense_stanfordNew = list(
       lang = 'en',
       init  = function() { },
-      senses = function(term, POS) jbt$models[['en_jbt_stanfordNew']]$senses(term, POS, finer = F, isas = F)
+      senses = function(term, POS) jbt$models[['en_jbt_stanfordNew']]()$senses(term, POS, finer = F, isas = F)
     ),
     #
     #
@@ -83,7 +87,7 @@ with(inventory, {
     # generate jbt models that have sense models
     result <- lapply(names(jbt$models), function(jbtmodelname) {
       inventories_for_jbtmodel <- list()
-      jbtmodel <- jbt$models[[jbtmodelname]]
+      jbtmodel <- jbt$models[[jbtmodelname]]()
       # finer senses if available
       if(jbtmodel$finersensemodel){
         newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbtsense_${jbtmodel$name}_finer')
@@ -156,4 +160,5 @@ with(inventory, {
   }
 
 })
+
 

@@ -35,4 +35,13 @@ with(util, {
     return(rawToChar(r$content))
   }
 
+  py.source_string <- function(pystring, envir = parent.frame(), convert = TRUE){
+    pyfile <- tempfile(fileext='.py')
+    sink(file=pyfile)
+    cat(pystring, sep='\n')
+    sink()
+    reticulate::source_python(pyfile, envir, convert)
+    unlink(pyfile)
+  }
+
 })

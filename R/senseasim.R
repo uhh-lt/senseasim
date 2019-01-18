@@ -3,6 +3,16 @@ senseasim <- new.env(parent = .GlobalEnv)
 
 with(senseasim, {
 
+  .INITIALIZED <- F
+  .init <- function(reinitialize = F) {
+    if(!.INITIALIZED || reinitialize){
+      vsm$.init(reinitialize)
+      jbt$.init(reinitialize)
+      inventory$.init(reinitialize)
+      sensevectors$.init(reinitialize)
+    }
+  }
+
   #'
   #' score
   #'
@@ -142,5 +152,6 @@ with(senseasim, {
   #' }
 
 }) # end with(...)
+
 
 

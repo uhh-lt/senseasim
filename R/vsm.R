@@ -6,13 +6,39 @@ with(vsm, {
 
   .models_loaded <- list()
 
-  .init <- function(){
-    models_available <- .models_available()
-    models <<- .get_models(T, models_available)
-    # names(models) <<- names(models_available)
+  .INITIALIZED <- F
+  .init <- function(reinitialize = F) {
+    if(!.INITIALIZED || reinitialize){
+      models_available <- .models_available()
+      models <<- .get_models(T, models_available)
+      .INITIALIZED <- T
+    }
   }
 
   .models_available <- function() list(
+    en_simple_ft_300d = list(
+      lang = 'en',
+      init = function() .fasttext.load(
+        filelocation = paste0(cache$data_dir(),'/fasttext/wiki.simple.bin'),
+        unk = 'the',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .fasttext.get_vector('en_simple_ft_300d', word_or_index),
+      getterm = function(index) .fasttext.get_term('en_simple_ft_300d', index)
+    ),
+    en_ft_300d = list(
+      lang = 'en',
+      init = function() .fasttext.load(
+        filelocation = paste0(cache$data_dir(),'/fasttext/wiki.en.bin'),
+        unk = 'the',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .fasttext.get_vector('en_ft_300d', word_or_index),
+      getterm = function(index) .fasttext.get_term('en_ft_300d', index)
+    ),
+    #
+    #
+    #
     en_glove_6B_50d = list(
       lang = 'en',
       init = function() .txt.load_matrix (
@@ -20,7 +46,7 @@ with(vsm, {
         unk = 'unknown',
         transformer = function(w) tolower(w)
       ),
-      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d', .as_column=F),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d'),
       getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d')
     ),
     en_glove_6B_50d_1K = list(
@@ -30,7 +56,7 @@ with(vsm, {
         unk = 'the',
         transformer = function(w) tolower(w)
       ),
-      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d_1K', .as_column=F),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d_1K'),
       getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d_1K')
     )
   )
@@ -137,13 +163,13 @@ with(vsm, {
 
     if(!file.exists(fdesc)) {
       if(!.txt.build_bigmatrix_from_txt(filelocation)){
-        util$message(sprintf('Loading Vector Space Matrix from \'%s\' failed, file does not exists.', fdesc))
+        util$message(sprintf('Loading Vector Space Matrix from text file \'%s\' failed, file does not exists.', fdesc))
         return(F)
       }
     }
 
     # else read vector space matrix as bigmatrix
-    util$message(sprintf('loading Vector Space Matrix \'%s\'', filelocation))
+    util$message(sprintf('loading FastText Vector Space Matrix \'%s\'', filelocation))
     newmodel <- newEmptyObject()
     newmodel$M <- bigmemory::attach.big.matrix(obj = basename(fdesc), path = dirname(fdesc))
     newmodel$vocab <- readLines(gsub('[.]desc$', '.rownames', fdesc))
@@ -161,7 +187,7 @@ with(vsm, {
     return(txtmodel$vocab[[idx]])
   }
 
-  .txt.get_vector <- function(term_or_idx, modelname, .as_column = F) {
+  .txt.get_vector <- function(term_or_idx, modelname) {
     model <- .models_loaded[[modelname]]
     if(is.character(term_or_idx))
       mterm <- model$transform(term_or_idx)
@@ -177,8 +203,6 @@ with(vsm, {
       v <- matrix(nrow = 1, data = model$M[mterm$idx,], dimnames = list(mterm$term), byrow = T)
     else
       v <- matrix(NA, nrow=1, ncol=ncol(M), dimnames = list(mterm$term)) # create a NA valued matrix with one vector and the dim of M)
-    if(.as_column)
-      v <- t(v)
     return(v)
   }
 
@@ -189,6 +213,83 @@ with(vsm, {
       return(list(term = mterm, idx = idx))
     }else{
       return(model$unk)
+    }
+  }
+
+  .fasttext.load <- function(filelocation, unk, transformer){
+
+    #reticulate::source_python('embedding.py')
+    util$py.source_string("
+from pyfasttext import FastText
+
+class FastTextEmbedding(object):
+
+  def __init__(self, binfile, normalize = False):
+    self.file = binfile
+    self.vdim = -1
+    self.normalize = normalize
+
+  def load(self):
+    print('Loading fasttext model.')
+    self.ftmodel = FastText()
+    self.ftmodel.load_model(self.file)
+    self.vdim = len(self.ftmodel['is'])
+    print('Finished loading fasttext model.')
+    return self
+
+  def getVector(self, word):
+    return self.ftmodel.get_numpy_vector(word, normalized = self.normalize)
+
+  def vocabulary(self):
+    return self.ftmodel.words
+
+  def dim(self):
+    return self.vdim
+")
+
+    # else read vector space matrix as pyfasttext object
+    util$message(sprintf('loading Vector Space Matrix \'%s\'', filelocation))
+    newmodel <- newEmptyObject()
+    newmodel$py <- FastTextEmbedding(filelocation, T)
+    newmodel$py$load()
+    newmodel$vocab <- newmodel$py$vocabulary()
+    newmodel$unk <- list(term = unk, idx = which(newmodel$vocab == unk))
+    newmodel$transform <- function(term) { .fasttext.get_vocabulary_term(term, transformer, newmodel) }
+    newmodel$vdim <- newmodel$py$dim()
+    return(newmodel)
+
+  }
+
+  .fasttext.get_vector <- function(ftmodelname, term_or_idx) {
+    ftmodel <- .models_loaded[[ftmodelname]]
+    if(is.character(term_or_idx))
+      mterm <- ftmodel$transform(term_or_idx)
+    else{
+      if(term_or_idx > length(ftmodel$vocab) || term_or_idx < 1)
+        mterm <- ftmodel$unk
+      else
+        mterm <- list(term = ftmodel$term(term_or_idx), idx = term_or_idx)
+    }
+
+    # get the vector
+    v <- matrix(nrow = 1, data = ftmodel$py$getVector(mterm$term), dimnames = list(mterm$term), byrow = T)
+    return(v)
+  }
+
+  .fasttext.get_term <- function(ftmodelname, idx) {
+    ftmodel <- .models_loaded[[ftmodelname]]
+    if(idx < 1 || idx > length(ftmodel$vocab))
+      return(NA)  # TODO: check if that makes any problems
+    return(ftmodel$vocab[[idx]])
+  }
+
+  .fasttext.get_vocabulary_term <- function(term, tfun, ftmodel){
+    tterm <- tfun(term)
+    idx <- which(ftmodel$vocab == tterm)
+    if(length(idx) > 0) {
+      return(list(term = tterm, idx = idx))
+    }else{
+      return(list(term = tterm, idx = tterm)) # TODO: check if that makes any problems
     }
   }
 

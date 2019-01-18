@@ -10,10 +10,14 @@ with(jbt, {
 
   models <- list()
 
-  .init <- function(){
-    models_available <- .jbt_models_available()
-    models <<- lapply(names(models_available), .getmodel)
-    names(models) <<- names(models_available)
+  .INITIALIZED <- F
+  .init <- function(reinitialize = F) {
+    if(!.INITIALIZED || reinitialize){
+      models_available <- .jbt_models_available()
+      models <<- lapply(names(models_available), .getmodel)
+      names(models) <<- names(models_available)
+      .INITIALIZED <- T
+    }
   }
 
   .sim_urlpattern='http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/${model}/jo/similar/${term}%23${pos}?numberOfEntries=1000&format=json'
@@ -123,7 +127,7 @@ with(jbt, {
   #'
   .get_JBT_similarities <- function(term, POS = NA, jbt_modelname) {
     if(is.na(POS)) POS <- 'N'
-    model = models[[jbt_modelname]]
+    model = models[[jbt_modelname]]()
     jbtPOS <- .convertToJbtPOS(POS)
 
     # get from temp dir if existent
@@ -148,7 +152,7 @@ with(jbt, {
   #'
   .get_JBT_senses <- function(term, POS = NA, finer=T, isas = F, jbt_modelname) {
     if(is.na(POS)) POS <- 'N'
-    model <- models[[jbt_modelname]]
+    model <- models[[jbt_modelname]]()
     jbtPOS <- .convertToJbtPOS(POS)
     fname <- cache$get_filename(term, jbtPOS, dirname = cache$data_temp_dir(), prefix = paste0('jbtsenseapi', if(finer) 'finer' else '' ,'__', jbt_modelname, '__'))
     json_doc <- cache$load(fname, function() {
@@ -178,7 +182,8 @@ with(jbt, {
     jbtmodel$sim <- function(term, POS = NA) .get_JBT_similarities(term, POS, jbtmodelname)
     jbtmodel$senses <- function(term, POS = NA, finer=T, isas = F) .get_JBT_senses(term, POS, finer, isas, jbtmodelname)
     jbtmodel$name <- jbtmodelname
-    return(jbtmodel)
+    return(function() jbtmodel)
   }
 
 }) # end with(...)
+

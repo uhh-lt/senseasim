@@ -3,9 +3,13 @@ sensevectors <- new.env(parent = .GlobalEnv)
 
 with(sensevectors, {
 
-  .init <- function() {
-    vsm$.init()
-    inventory$.init()
+  .INITIALIZED <- F
+  .init <- function(reinitialize = F) {
+    if(!.INITIALIZED || reinitialize){
+      vsm$.init()
+      inventory$.init()
+      .INITIALIZED <- T
+    }
   }
 
   .defaults <- list(
@@ -13,7 +17,6 @@ with(sensevectors, {
     topn_sense_terms = 5,
     shift_lambda = .5,
     senseinventoryname = 'en_jbtsense_stanfordNew_finer'
-    #senseinventoryname = 'cluster__glove_6B_50d__sim500cluster_cw'
   )
 
   get_sense_vectors <- function(term, POS, vsmodelname = .defaults$vsmodelname, senseinventoryname = .defaults$senseinventoryname, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
@@ -22,8 +25,8 @@ with(sensevectors, {
     R$params <- as.list(match.call())
     R$status <- list()
 
-    vsmodel <- .vsmodels[[vsmodelname]]()
-    sensefun <- .inventories[[senseinventoryname]]
+    vsmodel <- vsm$models[[vsmodelname]]()
+    sensefun <- inventory$models[[senseinventoryname]]()
 
     # prepare backup return values
     R$v <- matrix(NA, ncol = 1, nrow = vsmodel$vdim, dimnames = list(NULL, paste0(term,'#')))

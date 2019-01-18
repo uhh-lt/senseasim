@@ -9,8 +9,8 @@ cache <- new.env(parent = .GlobalEnv)
 with(cache, {
 
   # Utilities ----
-  data_dir <- function() Sys.getenv('DATA_HOME', unset = dirname('~/.'))
-  data_temp_dir <- function() Sys.getenv('DATA_TEMP', unset = dirname(tempdir()))
+  data_dir <- function() normalizePath(Sys.getenv('DATA_HOME', unset = '~/.'))
+  data_temp_dir <- function() normalizePath(Sys.getenv('DATA_TEMP', unset = tempdir()))
 
   #'
   #' Helper function, get the case representation U(ppercase) or l(owercase) for each character in a string
