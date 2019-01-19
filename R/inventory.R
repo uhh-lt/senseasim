@@ -82,8 +82,6 @@ with(inventory, {
   }
 
   .generate_from_jbtmodels <- function() {
-    vsmodelname <- 'en_glove_6B_50d'
-    vsmodel <- vsm$models[[vsmodelname]]
     # generate jbt models that have sense models
     result <- lapply(names(jbt$models), function(jbtmodelname) {
       inventories_for_jbtmodel <- list()
@@ -108,26 +106,30 @@ with(inventory, {
         )
         inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
       }
-      # senses by clustering jbt similar terms 'cluster__glove_6B_50d__sim500cluster_cw'
-      newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbt_${jbtmodel$name}__${vsmodelname}__sim500cluster_mcl')
-      newjbtinventory <- list(
-        lang = jbtmodel$lang,
-        init = function() { },
-        senses = function(term, POS) wsi$induceby.simcluster.jbt(
-          term = term,
-          POS = POS,
-          jbtmodel = jbtmodel,
-          vsmodel = vsmodel(),
-          topn.similar.terms = 500,
-          simfun = senseasim$cos,
-          simfun.name = 'cos',
-          simfun.issymmetric = T,
-          thresh = 0.66,
-          minsize = 0,
-          cluster.fun = function(X) { clust$mcl(X, allowsingletons = F) },
-          cluster.fun.name = 'mcl_nosingletons')$itemlists
-      )
-      inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
+      vsmodelname <- vsm$.get_best_modelname_for_lang(jbtmodel$lang)
+      if(!is.null(vsmodelname)){
+        vsmodel <- vsm$models[[vsmodelname]]
+        # senses by clustering jbt similar terms 'cluster__glove_6B_50d__sim500cluster_cw'
+        newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbt_${jbtmodel$name}__${vsmodelname}__sim500cluster_mcl')
+        newjbtinventory <- list(
+          lang = jbtmodel$lang,
+          init = function() { },
+          senses = function(term, POS) wsi$induceby.simcluster.jbt(
+            term = term,
+            POS = POS,
+            jbtmodel = jbtmodel,
+            vsmodel = vsmodel(),
+            topn.similar.terms = 500,
+            simfun = senseasim$cos,
+            simfun.name = 'cos',
+            simfun.issymmetric = T,
+            thresh = 0.66,
+            minsize = 0,
+            cluster.fun = function(X) { clust$mcl(X, allowsingletons = F) },
+            cluster.fun.name = 'mcl_nosingletons')$itemlists
+        )
+        inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
+      }
       return(inventories_for_jbtmodel)
     })
     result <- unlist(result, recursive = F, use.names = T)
@@ -160,5 +162,6 @@ with(inventory, {
   }
 
 })
+
 
 

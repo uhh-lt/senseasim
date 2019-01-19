@@ -191,9 +191,7 @@ with(vsm, {
     lockfile <- file.path(bckngpath, paste0(bckngfile, '.lock'))
     lock__ <- flock::lock(lockfile)
 
-    message(sprintf('[%s-%d-%s] Trying to convert Vector Space Matrix: \n  input: \'%s\' \n  path:  \'%s\' \n  bin:   \'%s\'  \n  desc:  \'%s\' ',
-                    gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"),
-                    filename, bckngpath, bckngfile, bckngdesc))
+    util$message(sprintf('Trying to convert Vector Space Matrix: \n  input: \'%s\' \n  path:  \'%s\' \n  bin:   \'%s\'  \n  desc:  \'%s\' ', filename, bckngpath, bckngfile, bckngdesc))
 
     if(file.exists(file.path(bckngpath, bckngdesc))) {
       util$message('Descriptor file exists. Skipping.')
@@ -211,7 +209,7 @@ with(vsm, {
     tictoc::tic('Elapsed')
     tictoc::tic('Finished loading.')
 
-    message(sprintf('[%s-%d-%s] Loading...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+    util$message('Loading...')
 
     if(endsWith(filename, '.gz')){
       df <- data.table::fread(sprintf('cat %s | gzip -d', filename), sep=separator, header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
@@ -221,16 +219,16 @@ with(vsm, {
 
     colnames(df) <- NULL # remove colnames
     tictoc::tic('Fixed missing rowname values.')
-    message(sprintf('[%s-%d-%s] Fixing missing values...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+    util$message('Fixing missing values...')
     missing_names <- which(is.na(df[,1]) | is.null(df[,1]) | df[,1] == '') # first column is vocabulary, find missing values
     df[missing_names, 1] <- sapply(missing_names, function(ri) paste0('missing_row_',ri)) # fix missing values
-    message(sprintf('[%s-%d-%s] Removed %d vectors with missing rownames.', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), length(missing_names)))
+    util$message(sprintf('Removed %d vectors with missing rownames.', length(missing_names)))
     tictoc::toc()
 
     tictoc::tic('Fixed unique rownames.')
-    message(sprintf('[%s-%d-%s] Fixing unique rownames...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+    util$message(sprintf('Fixing unique rownames...'))
     rows_unique <- which(!duplicated(df[,1]))
-    message(sprintf('[%s-%d-%s] Removing %d vectors with non-unique rownames...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), nrow(df) - length(rows_unique)))
+    util$message(sprintf('Removing %d vectors with non-unique rownames...', nrow(df) - length(rows_unique)))
     df <- df[rows_unique,]
     tictoc::toc()
 
@@ -240,12 +238,12 @@ with(vsm, {
 
     tictoc::toc()
 
-    message(sprintf('[%s-%d-%s] Data size: %s', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S"), format(object.size(df), units = "auto")))
+    util$message(sprintf('Data size: %s', format(object.size(df), units = "auto")))
     message('Memory usage:')
     print.table(gc(reset=T)) # show some memory usage
 
     tictoc::tic('Finished converting.')
-    message(sprintf('[%s-%d-%s] Converting to bigmatrix...', gsub('\\..*$', '', Sys.info()[['nodename']]), Sys.getpid(), format(Sys.time(), "%m%d-%H%M%S")))
+    util$message('Converting to bigmatrix...')
     m <- as.matrix(df)
     bm <- bigmemory::as.big.matrix(m, backingfile = bckngfile, backingpath = bckngpath, descriptorfile = bckngdesc, shared = T)
     # save vocabulary file
@@ -257,7 +255,7 @@ with(vsm, {
 
     # free memory
     rm(df)
-    message('Memory usage:')
+    util$message('Memory usage:')
     print.table(gc(reset=T)) # show some memory usage
     tictoc::toc()
 
