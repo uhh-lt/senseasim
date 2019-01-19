@@ -26,14 +26,14 @@ with(sensevectors, {
     R$status <- list()
 
     vsmodel <- vsm$models[[vsmodelname]]()
-    sensefun <- inventory$models[[senseinventoryname]]()
+    senseinventory <- inventory$models[[senseinventoryname]]()
 
     # prepare backup return values
     R$v <- matrix(NA, ncol = 1, nrow = vsmodel$vdim, dimnames = list(NULL, paste0(term,'#')))
     R$v_shift <- R$v
 
     # get the sense lists
-    R$termSenseInventory <- sensefun(term, POS)
+    R$termSenseInventory <- senseinventory$senses(term, POS)
     R$nsenses <- length(R$termSenseInventory)
     R$status[[length(R$status)+1]] <- sprintf('found %d non-empty senses for term=\'%s#%s\'', R$nsenses, term, POS)
     util$message(R$status[[length(R$status)]])
@@ -154,7 +154,7 @@ with(sensevectors, {
       })
     }
     else {
-      read_stdin(function(line) {
+      io.read_stdin(function(line) {
         row = strsplit(line,'\\s+',fixed = F)[[1]]
         term <- row[1]
         POS <- row[2]
