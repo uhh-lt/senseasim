@@ -26,8 +26,8 @@ with(vsm, {
           unk = 'the',
           transformer = function(w) tolower(w)
         ),
-        getvector = function(word_or_index) .fasttext.get_vector('en_simple_ft_300d', word_or_index),
-        getterm = function(index) .fasttext.get_term('en_simple_ft_300d', index)
+        getvector = function(word_or_index) .fasttext.get_vector('en_ft_simplewiki_300d', word_or_index),
+        getterm = function(index) .fasttext.get_term('en_ft_simplewiki_300d', index)
       ),
       en_ft_wiki_300d = list(
         lang = 'en',
@@ -37,8 +37,8 @@ with(vsm, {
           unk = 'the',
           transformer = function(w) tolower(w)
         ),
-        getvector = function(word_or_index) .fasttext.get_vector('en_ft_300d', word_or_index),
-        getterm = function(index) .fasttext.get_term('en_ft_300d', index)
+        getvector = function(word_or_index) .fasttext.get_vector('en_ft_wiki_300d', word_or_index),
+        getterm = function(index) .fasttext.get_term('en_ft_wiki_300d', index)
       ),
       #
       #
@@ -188,7 +188,7 @@ with(vsm, {
     newmodel$vocab <- readLines(gsub('[.]desc$', '.rownames', fdesc))
     assertthat::are_equal(nrow(newmodel$M), length(newmodel$vocab))
     newmodel$unk <- list(term = unk, idx = which(newmodel$vocab == unk))
-    newmodel$transform <- function(term) { .txt.get_vocabulary_term(term, transformer, newmodel) }
+    newmodel$transform <- function(term) .txt.get_vocabulary_term(term, transformer, newmodel)
     newmodel$vdim <- ncol(newmodel$M)
     return(newmodel)
   }
@@ -292,7 +292,7 @@ with(vsm, {
     newmodel$vocab <- readLines(gsub('[.]desc$', '.rownames', fdesc))
     assertthat::are_equal(nrow(newmodel$M), length(newmodel$vocab))
     newmodel$unk <- list(term = unk, idx = which(newmodel$vocab == unk))
-    newmodel$transform <- function(term) { .txt.get_vocabulary_term(term, transformer, newmodel) }
+    newmodel$transform <- function(term) .txt.get_vocabulary_term(term, transformer, newmodel)
     newmodel$vdim <- ncol(newmodel$M)
     return(newmodel)
   }
@@ -347,10 +347,10 @@ with(vsm, {
         init = function() .fasttext.load(
           filelocation = modelfile,
           unk = NULL,
-          transformer =  function(w) gsub('\\s+','_', trimws(w))
+          transformer = function(w) gsub('\\s+', '_', trimws(w))
         ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, newmodelname),
-        getterm = function(index) .txt.get_term(index, newmodelname)
+        getvector = function(word_or_index) .fasttext.get_vector(newmodelname, word_or_index),
+        getterm = function(index) .fasttext.get_vector(newmodelname, index)
       )
       modelaslist <- list(newmodel)
       names(modelaslist) <- newmodelname
@@ -374,11 +374,9 @@ class FastTextEmbedding(object):
     self.normalize = normalize
 
   def load(self):
-    print('Loading fasttext model.')
     self.ftmodel = FastText()
     self.ftmodel.load_model(self.file)
     self.vdim = len(self.ftmodel['is'])
-    print('Finished loading fasttext model.')
     return self
 
   def getVector(self, word):
@@ -397,12 +395,12 @@ class FastTextEmbedding(object):
     newmodel$py <- FastTextEmbedding(filelocation, T)
     newmodel$py$load()
     newmodel$vocab <- newmodel$py$vocabulary()
+    newmodel$vdim <- newmodel$py$dim()
     if(!is.null(unk))
       newmodel$unk <- list(term = unk, idx = which(newmodel$vocab == unk))
     else
       newmodel$unk <- list(term = newmodel$vocab[[length(newmodel$vocab)]], idx = length(newmodel$vocab))
-    newmodel$transform <- function(term) { .fasttext.get_vocabulary_term(term, transformer, newmodel) }
-    newmodel$vdim <- newmodel$py$dim()
+    newmodel$transform <- function(term) .fasttext.get_vocabulary_term(term, transformer, newmodel)
     return(newmodel)
 
   }
@@ -469,6 +467,7 @@ class FastTextEmbedding(object):
       vsmodel <- vsmodels[[vsmodelname]]
       loadedvsmodel <- vsmodel$init()
       loadedvsmodel$lang <- vsmodel$lang
+      loadedvsmodel$basename <- vsmodel$basename
       loadedvsmodel$vector <- vsmodel$getvector
       loadedvsmodel$term <- vsmodel$getterm
       loadedvsmodel$name <- vsmodelname
