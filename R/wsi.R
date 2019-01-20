@@ -129,7 +129,7 @@ with(wsi, {
     result <- cache$load(filename = fname, computefun = function() {
       sims <- vs.similarities(term, vsmodel, simfun = simfun, simfun.name = simfun.name)
       sims <- sims[1:topn.similar.terms,]
-      result <- induceby.simcluster.terms(terms=rownames(sims), modelname=modelname, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
+      result <- induceby.simcluster.terms(terms=rownames(sims), vsmodel=vsmodel, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
       return(result)
     })
     if(is.numeric(minsize) & minsize > 1){
