@@ -163,12 +163,13 @@ with(sensevectors, {
     }
   }
 
-  cluster.init <- function(cl, inputfile, outputfile) {
+  .cluster.init <- function(cl, inputfile, outputfile) {
     words <<- data.table::fread(inputfile, sep=' ', header=F, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
-    parallel::clusterExport(cl, c('words','sensevectors'), envir = .GlobalEnv)
+    parallel::clusterExport(cl, c('words'), envir = .GlobalEnv)
     parallel::clusterExport(cl, c('outputfile'), envir = environment())
 
     parallel::clusterEvalQ(cl, {
+      library(senseasim)
       # initialization actions
       local_outputfile <<- paste0(outputfile, Sys.getpid())
       sensevectors$.init()
@@ -184,7 +185,7 @@ with(sensevectors, {
     cl <- if(is.null(cl)) { cclDef$make.default() } else{ cclDef$make.default(cl) }
 
     outputfile <- paste0(outputfile, format(Sys.time(), '%Y%m%d%H%M%S'))
-    cluster.init(cl, inputfile, outputfile)
+    .cluster.init(cl, inputfile, outputfile)
 
     # apply in parallel
     r <- parallel::parLapply(cl, seq_len(nrow(words)), function(i) {

@@ -15,75 +15,86 @@ with(vsm, {
     }
   }
 
-  .models_available <- function() list(
-    en_simple_ft_300d = list(
-      lang = 'en',
-      init = function() .fasttext.load(
-        filelocation = paste0(cache$data_dir(),'/fasttext/wiki.simple.bin'),
-        unk = 'the',
-        transformer = function(w) tolower(w)
+  .models_available <- function() { c(
+    # manually define some models
+    list(
+      en_ft_simplewiki_300d = list(
+        lang = 'en',
+        basename = 'ft_simplewiki_300d',
+        init = function() .fasttext.load(
+          filelocation = paste0(cache$data_dir(),'/fasttext/wiki.simple.bin'),
+          unk = 'the',
+          transformer = function(w) tolower(w)
+        ),
+        getvector = function(word_or_index) .fasttext.get_vector('en_simple_ft_300d', word_or_index),
+        getterm = function(index) .fasttext.get_term('en_simple_ft_300d', index)
       ),
-      getvector = function(word_or_index) .fasttext.get_vector('en_simple_ft_300d', word_or_index),
-      getterm = function(index) .fasttext.get_term('en_simple_ft_300d', index)
+      en_ft_wiki_300d = list(
+        lang = 'en',
+        basename = 'ft_wiki_300d',
+        init = function() .fasttext.load(
+          filelocation = paste0(cache$data_dir(),'/fasttext/wiki.en.bin'),
+          unk = 'the',
+          transformer = function(w) tolower(w)
+        ),
+        getvector = function(word_or_index) .fasttext.get_vector('en_ft_300d', word_or_index),
+        getterm = function(index) .fasttext.get_term('en_ft_300d', index)
+      ),
+      #
+      #
+      #
+      en_glove_6B_50d = list(
+        lang = 'en',
+        basename = 'glove_6B_50d',
+        init = function() .txt.load_matrix (
+          filelocation = paste0(cache$data_dir(),'/glove/glove.6B.50d.txt'),
+          unk = 'unknown',
+          transformer = function(w) tolower(w)
+        ),
+        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d'),
+        getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d')
+      ),
+      en_glove_6B_50d_1K = list(
+        lang = 'en',
+        basename = 'glove_6B_50d_1K',
+        init = function() .txt.load_matrix (
+          filelocation = paste0(cache$data_dir(),'/glove/glove.6B.50d.1K.txt'),
+          unk = 'the',
+          transformer = function(w) tolower(w)
+        ),
+        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d_1K'),
+        getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d_1K')
+      ),
+      #
+      #
+      #
+      en_lsa_100k = list(
+        lang = 'en',
+        basename = 'lsa_100k',
+        init = function() .rda.load_matrix (
+          filelocation = paste0(cache$data_dir(),'/lsafun/EN_100k.rda'),
+          unk = 'unknown',
+          transformer = function(w) tolower(w)
+        ),
+        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_lsa_100k'),
+        getterm = function(index) .txt.get_term(index, 'en_lsa_100k')
+      ),
+      en_lsa_100k_hal = list(
+        lang = 'en',
+        basename = 'lsa_100k_hal',
+        init = function() .rda.load_matrix (
+          filelocation = paste0(cache$data_dir(),'/lsafun/EN_100k_lsa.rda'),
+          unk = 'unknown',
+          transformer = function(w) tolower(w)
+        ),
+        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_lsa_100k_hal'),
+        getterm = function(index) .txt.get_term(index, 'en_lsa_100k_hal')
+      )
+      #
     ),
-    en_ft_300d = list(
-      lang = 'en',
-      init = function() .fasttext.load(
-        filelocation = paste0(cache$data_dir(),'/fasttext/wiki.en.bin'),
-        unk = 'the',
-        transformer = function(w) tolower(w)
-      ),
-      getvector = function(word_or_index) .fasttext.get_vector('en_ft_300d', word_or_index),
-      getterm = function(index) .fasttext.get_term('en_ft_300d', index)
-    ),
-    #
-    #
-    #
-    en_glove_6B_50d = list(
-      lang = 'en',
-      init = function() .txt.load_matrix (
-        filelocation = paste0(cache$data_dir(),'/glove/glove.6B.50d.txt'),
-        unk = 'unknown',
-        transformer = function(w) tolower(w)
-      ),
-      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d'),
-      getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d')
-    ),
-    en_glove_6B_50d_1K = list(
-      lang = 'en',
-      init = function() .txt.load_matrix (
-        filelocation = paste0(cache$data_dir(),'/glove/glove.6B.50d.1K.txt'),
-        unk = 'the',
-        transformer = function(w) tolower(w)
-      ),
-      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d_1K'),
-      getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d_1K')
-    ),
-    #
-    #
-    #
-    en_lsa_100k = list(
-      lang = 'en',
-      init = function() .rda.load_matrix (
-        filelocation = paste0(cache$data_dir(),'/lsafun/EN_100k.rda'),
-        unk = 'unknown',
-        transformer = function(w) tolower(w)
-      ),
-      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_lsa_100k'),
-      getterm = function(index) .txt.get_term(index, 'en_lsa_100k')
-    ),
-    en_lsa_100k_hal = list(
-      lang = 'en',
-      init = function() .rda.load_matrix (
-        filelocation = paste0(cache$data_dir(),'/lsafun/EN_100k_lsa.rda'),
-        unk = 'unknown',
-        transformer = function(w) tolower(w)
-      ),
-      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_lsa_100k_hal'),
-      getterm = function(index) .txt.get_term(index, 'en_lsa_100k_hal')
-    )
-    #
-  )
+    # automatically add models
+    .fasttext.generate_cc_from_dir(paste0(cache$data_dir(),'/fasttext/cc-157'))
+  )}
 
   .modelnames_for_lang <- function(lang) {
     matching_models <- grep(paste0('^',lang,'_'), names(.models_available()), value=T)
@@ -322,6 +333,33 @@ with(vsm, {
     }
   }
 
+  .fasttext.generate_cc_from_dir <- function(location){
+    if(!dir.exists(location))
+      return(list())
+    modelfiles <- list.files(path = location, pattern = '*.bin$', full.names = T, recursive = F)
+    models <- lapply(modelfiles, function(modelfile) {
+      fname <- basename(modelfile)
+      newmodelname <- gsub('^([^.]+).([^.]+).(\\d+).bin$', '\\2_ft_\\1_\\3', fname)
+      newmodel <- list(
+        location = modelfile,
+        lang = gsub('^([^_]+)_(.*)$', '\\1', newmodelname),
+        basename = gsub('^([^_]+)_(.*)$', '\\2', newmodelname),
+        init = function() .fasttext.load(
+          filelocation = modelfile,
+          unk = NULL,
+          transformer =  function(w) gsub('\\s+','_', trimws(w))
+        ),
+        getvector = function(word_or_index) .txt.get_vector(word_or_index, newmodelname),
+        getterm = function(index) .txt.get_term(index, newmodelname)
+      )
+      modelaslist <- list(newmodel)
+      names(modelaslist) <- newmodelname
+      return(modelaslist)
+    })
+    models <- unlist(models, recursive = F, use.names = T)
+    return(models)
+  }
+
   .fasttext.load <- function(filelocation, unk, transformer){
 
     #reticulate::source_python('embedding.py')
@@ -359,7 +397,10 @@ class FastTextEmbedding(object):
     newmodel$py <- FastTextEmbedding(filelocation, T)
     newmodel$py$load()
     newmodel$vocab <- newmodel$py$vocabulary()
-    newmodel$unk <- list(term = unk, idx = which(newmodel$vocab == unk))
+    if(!is.null(unk))
+      newmodel$unk <- list(term = unk, idx = which(newmodel$vocab == unk))
+    else
+      newmodel$unk <- list(term = newmodel$vocab[[length(newmodel$vocab)]], idx = length(newmodel$vocab))
     newmodel$transform <- function(term) { .fasttext.get_vocabulary_term(term, transformer, newmodel) }
     newmodel$vdim <- newmodel$py$dim()
     return(newmodel)
