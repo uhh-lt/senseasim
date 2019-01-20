@@ -17,15 +17,25 @@ with(wsi, {
 
     fname <- cache$get_filename(term_or_idx, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', vsmodel$name, '__', simfun.name, '__'))
     sim <- cache$load(filename = fname, computefun = function() {
-      # get top n most similar words in terms of
-      v <- vsmodel$vector(term_or_idx)
-      sim <- sapply(seq_len(length(vsmodel$vocab)), function(i) simfun(vsmodel$vector(i), v))
-      # order the result and store the dataframe
-      ordr <- order(sim, decreasing = T) # gets the indexes
-      sim <- sim[ordr]
-      names(sim) <- lapply(ordr, vsmodel$term)
-      sim <- as.data.frame(sim)
-      sim$idx <- ordr
+      if(!is.null(vsmodel$py)){ # get the similarities from fasttext
+        util$message('Using fasttext for similarity computation.')
+        sim <- vsmodel$py$nearest_neighbors(term_or_idx, 100000) # get the top 100K terms, that should be sufficient
+        sim <- c(list(list(term_or_idx, 1.0)), sim)
+        sim <- matrix(unlist(sim), ncol=2, byrow = T)
+        sim <- data.frame(as.numeric(sim[,2]), stringsAsFactors = F, row.names = sim[,1])
+        colnames(sim) <- list('sim')
+        sim$idx <- match(rownames(sim), vsmodel$vocab)
+      }else{
+        # get top n most similar words in terms of
+        v <- vsmodel$vector(term_or_idx)
+        sim <- sapply(seq_len(length(vsmodel$vocab)), function(i) simfun(vsmodel$vector(i), v))
+        # order the result and store the dataframe
+        ordr <- order(sim, decreasing = T) # gets also the indexes
+        sim <- sim[ordr]
+        names(sim) <- lapply(ordr, vsmodel$term)
+        sim <- as.data.frame(sim)
+        sim$idx <- ordr
+      }
       return(sim)
     })
     return(sim)

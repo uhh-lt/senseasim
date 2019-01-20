@@ -459,6 +459,12 @@ class FastTextEmbedding(object):
   def getVector(self, word):
     return self.ftmodel.get_numpy_vector(word, normalized = self.normalize)
 
+  def nearest_neighbors(self, term, n=1000):
+    return self.ftmodel.nearest_neighbors(term, n)
+
+  def all_nearest_neighbors(self, term):
+    return self.nearest_neighbors(term, len(self.vocabulary()))
+
   def vocabulary(self):
     return self.ftmodel.words
 
