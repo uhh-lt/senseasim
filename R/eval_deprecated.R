@@ -4,9 +4,9 @@
 #'
 #'
 
-eval <- new.env(parent = .GlobalEnv)
+eval_DEPRECATED <- new.env(parent = .GlobalEnv)
 
-with(eval, {
+with(eval_DEPRECATED, {
 
   .eval_configs <- function() list(
     default = list(

@@ -19,14 +19,16 @@ with(sensevectors, {
     senseinventoryname = 'en_jbtsense_stanfordNew_finer'
   )
 
-  get_sense_vectors <- function(term, POS, vsmodelname = .defaults$vsmodelname, senseinventoryname = .defaults$senseinventoryname, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
+  get_sense_vectors <- function(term, POS, vsmodel = .defaults$vsmodelname, senseinventory = .defaults$senseinventoryname, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
     # prepare the result object
     R <- newEmptyObject()
     R$params <- as.list(match.call())
     R$status <- list()
 
-    vsmodel <- vsm$models[[vsmodelname]]()
-    senseinventory <- inventory$models[[senseinventoryname]]()
+    if(is.character(vsmodel))
+      vsmodel <- vsm$models[[vsmodel]]()
+    if(is.character(senseinventory))
+      senseinventory <- inventory$models[[senseinventory]]()
 
     # prepare backup return values
     R$v <- matrix(NA, ncol = 1, nrow = vsmodel$vdim, dimnames = list(NULL, paste0(term,'#')))
