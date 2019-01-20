@@ -119,7 +119,7 @@ with(wsi, {
   #'
   #' induce senses by clustering the similarity matrix
   #'
-  induceby.simcluster.jbt <- function(term, POS, jbtmodel, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+  induceby.simcluster.jbt <- function(term, POS, jbtmodel, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
     fname <- cache$get_filename(term, POS, dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterjbt__', jbtmodel$name, '__', vsmodel$name, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       sims <- jbtmodel$sim(term=term, POS=POS)
@@ -137,7 +137,7 @@ with(wsi, {
   #'
   #' induce senses by clustering the similarity matrix
   #'
-  induceby.simcluster.vsm <- function(term, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+  induceby.simcluster.vsm <- function(term, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
     fname <- cache$get_filename(term, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclustervsm__', vsmodel$name, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       sims <- vs.similarities(term, vsmodel, simfun = simfun, simfun.name = simfun.name)
@@ -156,13 +156,17 @@ with(wsi, {
   #'
   #' induce senses by clustering the similarity matrix of 'terms'
   #'
-  induceby.simcluster.terms <- function(terms, vsmodel, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 0.66, minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+  induceby.simcluster.terms <- function(terms, vsmodel, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
     desc <- digest::digest(terms)
     fname <- cache$get_filename(desc, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterterms__', vsmodel$name, '__', simfun.name, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       n <- if (is.array(terms) || is.data.frame(terms)) nrow(terms) else length(terms)
       SIM <- vs.similarity.matrix(terms, vsmodel, n = n, identifier = desc, simfun = simfun, simfun.name = simfun.name, simfun.issymmetric = simfun.issymmetric)
       # prune by threshold, i.e. everything below will be set to zero
+      if(is.character(thresh)){
+        threshfun <- eval(parse(text=thresh))
+        thresh <- threshfun(SIM)
+      }
       SIM[which(SIM < thresh)] <- 0
       labels <- cluster.fun(SIM)
       aslists <- clust$as.cluster.lists(labels)

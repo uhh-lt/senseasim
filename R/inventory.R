@@ -43,7 +43,7 @@ with(inventory, {
             simfun = senseasim$cos,
             simfun.name = 'cos',
             simfun.issymmetric = T,
-            thresh = 0.66,
+            thresh = 'median',
             minsize = 0,
             cluster.fun = function(X) { clust$cw(X, allowsingletons = F) },
             cluster.fun.name = 'cw_nosingletons')$itemlists
@@ -59,7 +59,7 @@ with(inventory, {
             simfun = senseasim$cos,
             simfun.name = 'cos',
             simfun.issymmetric = T,
-            thresh = 0.66,
+            thresh = 'mean',
             minsize = 0,
             cluster.fun = function(X) { clust$cw(X, allowsingletons = F, remove_self_loops = T) },
             cluster.fun.name = 'cw_nosingletons')$itemlists
@@ -122,10 +122,10 @@ with(inventory, {
             simfun = senseasim$cos,
             simfun.name = 'cos',
             simfun.issymmetric = T,
-            thresh = 0.66,
+            thresh = 'mean',
             minsize = 0,
-            cluster.fun = function(X) { clust$mcl(X, allowsingletons = F) },
-            cluster.fun.name = 'mcl_nosingletons')$itemlists
+            cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
+            cluster.fun.name = 'mcl_tmean_nosingletons_noloops')$itemlists
         )
         inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
       }
@@ -150,10 +150,10 @@ with(inventory, {
             simfun = senseasim$cos,
             simfun.name = 'cos',
             simfun.issymmetric = T,
-            thresh = 0.8,
+            thresh = 'mean',
             minsize = 0,
             cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'mcl_nosingletons')$itemlists
+            cluster.fun.name = 'mcl_tmean_nosingletons_noloops')$itemlists
       )
       modelaslist <- list(newmodel)
       names(modelaslist) <- newmodelname
