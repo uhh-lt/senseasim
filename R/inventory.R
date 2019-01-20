@@ -106,8 +106,8 @@ with(inventory, {
         )
         inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
       }
-      vsmodelname <- vsm$.get_best_modelname_for_lang(jbtmodel$lang)
-      if(!is.null(vsmodelname)){
+      # for each vsm model and jbt model in the same language generate an inventory
+      for(vsmodelname in vsm$.modelnames_for_lang(jbtmodel$lang)){
         vsmodel <- vsm$models[[vsmodelname]]
         # senses by clustering jbt similar terms
         newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim500cluster_mcl')

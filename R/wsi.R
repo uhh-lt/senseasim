@@ -11,6 +11,7 @@ with(wsi, {
 
   #'
   #' @return a dataframe with similarity values and indexes in modelname
+  #' Note: the most similar term to the given term is the term itself
   #'
   vs.similarities <- function(term_or_idx, vsmodel, simfun = senseasim$cos, simfun.name = 'cos') {
     util$message(sprintf('Preparing similarity values for term \'%s\' and matrix \'%s\'. ', term_or_idx, vsmodel$name))
@@ -122,6 +123,8 @@ with(wsi, {
     fname <- cache$get_filename(term, POS, dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterjbt__', jbtmodel$name, '__', vsmodel$name, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       sims <- jbtmodel$sim(term=term, POS=POS)
+      # the most similar term should be the term itself, remove it
+      sims <- sims[-c(1),]
       result <- induceby.simcluster.terms(terms=sims$term, vsmodel=vsmodel, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
       return(result)
     })
@@ -138,7 +141,8 @@ with(wsi, {
     fname <- cache$get_filename(term, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclustervsm__', vsmodel$name, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       sims <- vs.similarities(term, vsmodel, simfun = simfun, simfun.name = simfun.name)
-      sims <- sims[1:topn.similar.terms,]
+      # the most similar term should be the term itself, remove it
+      sims <- sims[2:topn.similar.terms+1,]
       result <- induceby.simcluster.terms(terms=rownames(sims), vsmodel=vsmodel, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
       return(result)
     })
