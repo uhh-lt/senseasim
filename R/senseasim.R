@@ -28,7 +28,8 @@ with(senseasim, {
       t1_info = R1,
       t2_info = R2,
       scores = SIM,
-      maxscore = maxscore
+      maxscore = maxscore,
+      avgscore = avgscore
     ))
 
   }

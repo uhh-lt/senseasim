@@ -77,9 +77,16 @@ with(inventory, {
     .generate_from_vsm()
   )}
 
-  .get_best_for_lang <- function(lang) {
-    # TODO: implement
-    .inventories_loaded[[inventoryname]]
+  .modelnames_for_lang <- function(lang) {
+    matching_models <- grep(paste0('^', lang, '_'), names(models), value=T)
+    return(matching_models)
+  }
+
+  .get_best_modelname_for_lang <- function(lang) {
+    matching_models <- .modelnames_for_lang(lang)
+    if(length(matching_models) > 0){
+      return(matching_models[[1]])
+    }
     return(NULL)
   }
 
