@@ -3,6 +3,13 @@ senseasim <- new.env(parent = .GlobalEnv)
 
 with(senseasim, {
 
+  .defaults <- list(
+    vsmodelname = 'en_glove_6B_50d',
+    topn_sense_terms = 5,
+    shift_lambda = .5,
+    senseinventoryname = 'en_jbtsense_stanfordNew_finer'
+  )
+
   .INITIALIZED <- F
   .init <- function(reinitialize = F) {
     if(!.INITIALIZED || reinitialize){
@@ -16,10 +23,10 @@ with(senseasim, {
   #'
   #' score
   #'
-  score <- function(term1, term2, POS1 = 'NN', POS2 = 'NN', vsm_modelname = sensevectors$.defaults$vsm_model, senseinventoryname = sensevectors$.defaults$senseinventoryname, topn_sense_terms =  sensevectors$.defaults$topn_sense_terms, shift_lambda = sensevectors$.defaults$shift_lambda, simfun = senseasim$cos) {
+  score <- function(term1, term2, POS1 = 'NN', POS2 = 'NN', vsmodel, senseinventory, topn_sense_terms = 5, shift_lambda = 0.5, simfun = senseasim$cos) {
 
-    R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1, vsm_modelname = vsm_modelname, senseinventoryname = senseinventoryname, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
-    R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2, vsm_modelname = vsm_modelname, senseinventoryname = senseinventoryname, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
+    R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1, vsmodel = vsmodel, senseinventory = senseinventory, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
+    R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2, vsmodel = vsmodel, senseinventory = senseinventory, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
     SIM <- sim.matrix(R1$v_shift, R2$v_shift, simfun = simfun)
     maxscore <- max.sim(SIM)
     avgscore <- mean(SIM)
@@ -42,16 +49,16 @@ with(senseasim, {
   #' SIM[M1_i, M2_j]
   #'
   sim.matrix <- function(M1, M2, simfun = cos){
-    # columns of both matrices must match!
+    # rows of both matrices must match!
     assertthat::see_if(assertthat::are_equal(nrow(M1), nrow(M2)), msg='Dimension mismatch: rows in M1 unequal to rows in M2!')
 
     # create the similarity matrix
     SIM <-
       apply(
-        M2, 2,
+        M2, 1,
         function(v1) {
           apply(
-            M1, 2,
+            M1, 1,
             function(v2){
               simfun(v1, v2)
             }
@@ -61,9 +68,9 @@ with(senseasim, {
 
     # if SIM is not a matrix because M1 matrix was merely a vector, correct it manually!
     if(!is.matrix(SIM)) {
-      SIM <- matrix(SIM, nrow=ncol(M1), ncol=ncol(M2), byrow = F)
-      rownames(SIM) <- colnames(M1)
-      colnames(SIM) <- colnames(M2)
+      SIM <- matrix(SIM, nrow=nrow(M1), ncol=nrow(M2))
+      rownames(SIM) <- rownames(M1)
+      colnames(SIM) <- rownames(M2)
     }
     return(SIM)
   }

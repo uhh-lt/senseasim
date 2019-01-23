@@ -12,14 +12,7 @@ with(sensevectors, {
     }
   }
 
-  .defaults <- list(
-    vsmodelname = 'en_glove_6B_50d',
-    topn_sense_terms = 5,
-    shift_lambda = .5,
-    senseinventoryname = 'en_jbtsense_stanfordNew_finer'
-  )
-
-  get_sense_vectors <- function(term, POS, vsmodel = .defaults$vsmodelname, senseinventory = .defaults$senseinventoryname, topn_sense_terms = .defaults$topn_sense_terms, shift_lambda = .defaults$shift_lambda) {
+  get_sense_vectors <- function(term, POS, vsmodel, senseinventory, topn_sense_terms = 5, shift_lambda = .5) {
     # prepare the result object
     R <- newEmptyObject()
     R$params <- as.list(match.call())
