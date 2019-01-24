@@ -15,7 +15,6 @@ with(sensevectors, {
   get_sense_vectors <- function(term, POS, vsmodel, senseinventory, topn_sense_terms = 5, shift_lambda = .5) {
     # prepare the result object
     R <- newEmptyObject()
-    R$params <- as.list(match.call())
     R$status <- list()
 
     if(is.character(vsmodel))
@@ -67,9 +66,10 @@ with(sensevectors, {
     R$unique_i <- which(!duplicated(R$index$idx))
     uniqueindex <- R$index[R$unique_i,]
     uniqueindex <- uniqueindex[!uniqueindex$unknown,] # remove unknowns
+    uniqueindex_ <- uniqueindex[uniqueindex$sense != 0,] # remove the term itself
 
     # if processed sense inventory is empty we can't return anything
-    if(length(uniqueindex) <= 0) {
+    if(length(uniqueindex_) <= 0) {
       R$status[[length(R$status)+1]] <- sprintf('No known sense terms for \'%s %s\'. Skip processing.', term, POS)
       util$message(R$status[[length(R$status)]])
       return(R)
@@ -81,20 +81,20 @@ with(sensevectors, {
     # get the submatrices for each sense and produce the sense vectors
     R$v <- matrix(nrow = 0, ncol = vsmodel$vdim)
     R$v_shift <- matrix(nrow = 0, ncol = vsmodel$vdim)
-    for(i in seq_len(R$nsenses)){
+    for(i in seq_len(R$nsenses)) { # (seq_len ignores sense 0, which is the term itself)
       # get the average vector
       sense_terms <- unique(R$index$term[which(R$index$sense == i & !R$index$unknown)])
       if(length(sense_terms) <= 0) {
-        R$status[[length(R$status)+1]] <- sprintf('No known sense terms for sense %d of \'%s %s\'. Producing NA vector.', i, term, POS)
+        R$status[[length(R$status)+1]] <- sprintf('No known sense terms for sense %d of \'%s %s\'. Cannot produce sensevector... skipping.', i, term, POS)
         util$message(R$status[[length(R$status)]])
-        return(R)
+        next
       }
       s <- matrix(nrow=1, colMeans(M[sense_terms,,drop=F]))
       # now shift
       if(shift_lambda <= 0){
         s_shift <- s # term vector has no influence
       }else{
-        v <- M[mterm$term,,drop=F] # get the term vector
+        v <- M[R$index$term[[1]],,drop=F] # get the term vector
         if(shift_lambda >= 1)
           s_shift <- v # sense vector has no influence, replicate v
         else

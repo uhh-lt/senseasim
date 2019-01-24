@@ -90,11 +90,16 @@ with(evaluate, {
       ))
     },
     sensasim = function(vsmodelname, senseinventoryname, w1, w2){
-      senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5)
-      sim <- vsm$models[[vsmodelname]]()$sim(w1, w2)
+      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5)
+      r_concise <- r_full$maxscore
+      r_concise$t1.nsenses <- r_full$t1_info$nsenses
+      r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
+      r_concise$t2.nsenses <- r_full$t2_info$nsenses
+      r_concise$t2.is.unk <- r_full$t2_info$index[1,]$unknown
+      r_concise$avgscore <- r_full$avgscore
       return(list(
-        concise = sim,
-        full    = sim
+        concise = r_concise,
+        full    = r_full
       ))
     }
 
@@ -135,8 +140,6 @@ with(evaluate, {
 
     # save concise results as data.table in tsv format
     #do.call(rbind, lapply(scores, '[[', 'dtrow'))
-
-
     return(scores)
   }
 
