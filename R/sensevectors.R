@@ -32,6 +32,13 @@ with(sensevectors, {
     R$status[[length(R$status)+1]] <- sprintf('found %d non-empty senses for term=\'%s#%s\'', R$nsenses, term, POS)
     util$message(R$status[[length(R$status)]])
 
+    # consistency check
+    if(is.null(R$termSenseInventory) | length(R$termSenseInventory) < 1) {
+      # if sense inventory is empty issue a warning
+      R$status[[length(R$status)+1]] <- 'Attention: sense inventory is empty.'
+      util$message(R$status[[length(R$status)]])
+    }
+
     # make a proper index as dataframe, where we can e.g. select all entries from sense 2 with R$index[which(R$index$sense == 2),]
     mterm <- vsmodel$transform(term)
     mterm$original <- term
@@ -40,10 +47,10 @@ with(sensevectors, {
     mterm$unknown <- (mterm$term == vsmodel$unk$term)
     R$index <- data.frame(mterm, stringsAsFactors = F)
 
-    # get the sub-matrix which contains the term vectors of all terms within the topn of the sense lists
-    if(is.null(R$termSenseInventory) | length(R$termSenseInventory) < 1) {
-      # if sense inventory is empty issue a warning
-      R$status[[length(R$status)+1]] <- 'Attention: sense inventory is empty.'
+    # consistency check
+    if(mterm$unknown) {
+      # if the term is unknown to the vs model issue a warning
+      R$status[[length(R$status)+1]] <- sprintf('Attention: term vector for \'%s\' is unknown.', term)
       util$message(R$status[[length(R$status)]])
     }
 
@@ -65,8 +72,7 @@ with(sensevectors, {
     # get unique terms
     R$unique_i <- which(!duplicated(R$index$idx))
     uniqueindex <- R$index[R$unique_i,]
-    uniqueindex <- uniqueindex[!uniqueindex$unknown,] # remove unknowns
-    uniqueindex_ <- uniqueindex[uniqueindex$sense != 0,] # remove the term itself
+    uniqueindex_ <- uniqueindex[!(uniqueindex$unknown | uniqueindex_$sense == 0),] # remove unknowns and the term itself
 
     # if processed sense inventory is empty we can't return anything
     if(length(uniqueindex_) <= 0) {
