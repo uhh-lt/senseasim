@@ -5,8 +5,9 @@ with(evaluate, {
 
   .init <- function() {
     senseasim$.init()
-    .datasets()
   }
+
+  .load_dataset <- function(filename) data.table::fread(filename, sep=';', header=T, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=T, quote="")
 
   #'
   #' read SemR-11 dataset
@@ -17,18 +18,56 @@ with(evaluate, {
   .datasets <- function(path = file.path(cache$data_dir(), 'sim-multilang','SemR-11')) {
     dt <- data.table::data.table(filename = list.files(path, pattern = '^.+[.]dataset$', full.names = T))
     dt[,id:=.I]
-    dt$basename <- basename(dt$file)
+    dt$basename <- basename(dt$filename)
     dt$lang <- gsub('^([^-]+)-([^.]+).dataset$', '\\1', dt$basename)
     dt$type <- gsub('^([^-]+)-([^.]+).dataset$', '\\2', dt$basename)
-    dt$load <- lapply(dt$filename, function(f) function() .load_dataset(f))
+    dt$loaddata <- lapply(dt$filename, function(f) function() .load_dataset(f))
     return(dt)
   }
 
-  .load_dataset <- function(filename){
-    data.table::fread(filename, sep=';', header=T, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=F, quote="")
-  }
+  .scorefuns <- list(
+    rand = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
+      rand <- runif(1)
+      r_full <- list(
+        rand = rand,
+        t1.is.unk =  F,
+        t2.is.unk =  F,
+        t1 = w1,
+        t2 = w2
+      )
+      r_concise <- list(
+        rand = rand,
+        t1.is.unk = r_full$t1.is.unk,
+        t2.is.unk = r_full$t2.is.unk
+      )
+      return(list(
+        concise = r_concise,
+        full    = r_full
+      ))
+    }, valuenames = c('rand')),
+    standardcos = list(fun=function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2){
+      sim <- vsm$models[[vsmodelname]]()$sim(w1, w2)
+      return(list(
+        concise = sim,
+        full    = sim
+      ))
+    }, valuenames = c('sim')),
+    sensasim = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
+      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5)
+      r_concise <- r_full$maxscore
+      r_concise$t1.nsenses <- r_full$t1_info$nsenses
+      r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
+      r_concise$t2.nsenses <- r_full$t2_info$nsenses
+      r_concise$t2.is.unk <- r_full$t2_info$index[1,]$unknown
+      r_concise$avgscore <- r_full$avgscore
+      return(list(
+        concise = r_concise,
+        full    = r_full
+      ))
+    }, valuenames = c('max_sim', 'avgscore'))
+  )
 
-  .generate_sensevector_variants <- function() {
+  .generate_evaluations <- function() {
     d <- .datasets()
     dn <- lapply(seq_len(nrow(d)), function(i){
       di <- d[i, ]
@@ -51,10 +90,14 @@ with(evaluate, {
         tryCatch(grep('_jbtsim_', sinventories, value = T)[[1]], error = function(e) c()),
         tryCatch(grep('_vsmsim_', sinventories, value = T)[[1]], error = function(e) c())
       )
-      # add all information to the data table
+      # add all senseinventory related information to the data table
       di$vsmodelname <- vsmodelname
       di <- di[rep(1, times=length(sinventoriesfiltered))]
       di$senseinventory <- sinventoriesfiltered
+      # copy each row and add the scorefun
+      scorefunsrep <- rep(names(.scorefuns), times=nrow(di))
+      di <- di[rep(seq_len(nrow(di)), each=length(.scorefuns))]
+      di$scorefun <- scorefunsrep
       return(di)
     })
     dn <- c(dn, fill=T)
@@ -62,55 +105,12 @@ with(evaluate, {
     return(dn)
   }
 
-  .scorefuns <- list(
-    rand = function(vsmodelname, senseinventoryname, w1, w2) {
-      rand <- runif(1)
-      r_full <- list(
-        rand = rand,
-        t1.is.unk =  F,
-        t2.is.unk =  F,
-        t1 = w1,
-        t2 = w2
-      )
-      r_concise <- list(
-        rand = rand,
-        t1.is.unk = r_full$t1.is.unk,
-        t2.is.unk = r_full$t2.is.unk
-      )
-      return(list(
-        concise = r_concise,
-        full    = r_full
-      ))
-    },
-    standardcos = function(vsmodelname, senseinventoryname, w1, w2){
-      sim <- vsm$models[[vsmodelname]]()$sim(w1, w2)
-      return(list(
-        concise = sim,
-        full    = sim
-      ))
-    },
-    sensasim = function(vsmodelname, senseinventoryname, w1, w2){
-      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5)
-      r_concise <- r_full$maxscore
-      r_concise$t1.nsenses <- r_full$t1_info$nsenses
-      r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
-      r_concise$t2.nsenses <- r_full$t2_info$nsenses
-      r_concise$t2.is.unk <- r_full$t2_info$index[1,]$unknown
-      r_concise$avgscore <- r_full$avgscore
-      return(list(
-        concise = r_concise,
-        full    = r_full
-      ))
-    }
-
-  )
-
   .evaluate <- function(dataset, vsmodelname, senseinventoryname, scorefunname = names(.scorefuns)[[1]], par=NULL, outfile=NULL) {
-    scorefun <- .scorefuns[[scorefunname]]
+    scorefun <- .scorefuns[[scorefunname]]$fun
     rowfun <- function(i) {
       row <- dataset[i,]
       util$message(sprintf('Processing row %s/%s: <%s,%s> with (%s, %s, %s)', i, nrow(dataset), row$word1, row$word2, vsmodelname, senseinventoryname, scorefunname))
-      result <- scorefun(vsmodelname, senseinventoryname, row$word1, row$word2)
+      result <- scorefun(vsmodelname, senseinventoryname, row$word1, row$word2, if(!is.null(row$pos1)) row$pos1 else 'N', if(!is.null(row$pos2)) row$pos2 else 'N')
       # combine row with the concise result which is a dataframe row
       row <- cbind(row, result$concise)
       # return combined row and the full result (for information purposes)
@@ -134,101 +134,66 @@ with(evaluate, {
         FUN = rowfun
       )
     }
-    # save full results as rds
-    #saveRDS(lapply(x, '[[', 'full')) # from each sublist select the 'full' entry
+    if(!is.null(outfile)){
+      # save full results as rds
+      saveRDS(scores, file = paste0(outfile,'.rds')) # from each sublist select the 'full' entry
+      # save concise results as data.table in tsv format
+      scores <- do.call(rbind, lapply(scores, '[[', 'dtrow'))
+      write.table(scores, quote=F, sep ='\t', row.names=F, col.names=T, file=paste0(outfile, '.tsv'))
+    }
+    # compute correlationscores for every valuename
+    correlations <- lapply(.scorefuns[[scorefunname]]$valuenames, function(valuename) {
+      .correlation(scores, xname='score', yname=valuename)
+    })
+    names(correlations) <- paste0(scorefunname, '$', .scorefuns[[scorefunname]]$valuenames)
 
-
-    # save concise results as data.table in tsv format
-    #do.call(rbind, lapply(scores, '[[', 'dtrow'))
-    return(scores)
+    # return the computed scores
+    return(list(
+      scores = scores,
+      correlations = correlations
+    ))
   }
 
-  #' @param dsetfilterfun NULL or filterfunction, e.g. function(dset) dset$filename == 'ar-ws353.dataset'
-  #' @test e.g. debug with eval(par = NULL, dsetfilterfun = function(dset) dset$filename == 'ar-ws353.dataset')
-  #' @test e.g. eval only de datasets with ft$eval(par = NULL, dsetfilterfun = function(dset) grepl('[.]de[.]', dset$filename))
-  eval <- function(par = NULL, dsetfilterfun = function(dset) !is.na(dset$modelname), run = list('rand')) {
-
-    if(is.null(par) || par <= 1) # run locally
-      .init()
-
-    suppressPackageStartupMessages(require(dplyr))
-    datasets <- .datasets()
-    dsetind <- seq_len(nrow(datasets))
-    if(!is.null(dsetfilterfun)){
-      dsetind <- Filter(function(i) dsetfilterfun(datasets[i,]), dsetind)
+  .correlation <- function(dt, xname, yname, remove.unk = T){
+    x <- dt[,xname]
+    y <- dt[,yname]
+    if(remove.unk & 't1.is.unk' %in% colnames(dt) & 't2.is.unk' %in% colnames(dt)){
+      x <- dt[!(t1.is.unk | t2.is.unk), xname]
+      y <- dt[!(t1.is.unk | t2.is.unk), yname]
     }
+    cscore <- cor(x=x, y=y, use='pairwise.complete.obs', method='spearman')
+    return(cscore)
+  }
 
-    # for each dataset
-    lapply(dsetind, function(i_d) {
-      dataset <- datasets[i_d,]
-      util$message(sprintf('Current dataset: [%d]\n%s', i_d, paste0('\t', colnames(dataset), ': ', dataset, collapse = '\n')))
+  #' @param dsetfilterfun NULL or filterfunction
+  #' @test e.g. eval only de datasets with runeval(par = NULL, evalfilter = function(dset) dset$lang == 'en'))
+  .run.eval <- function(par = NULL, evalfilter = function(e) T) {
+    .init()
+    evaluations <- .generate_evaluations()
+    evalind <- seq_len(nrow(evaluations))
+    if(!is.null(evalfilter))
+      evalind <- Filter(function(i) evalfilter(evaluations[i,]), evalind)
+
+    # for each evaluation score to be computed
+    results <- lapply(evalind, function(eval_i) {
+      evaluation <- evaluations[eval_i,]
+      #util$message(sprintf('Current dataset: [%d]\n%s', i_d, paste0('\t', colnames(dataset), ': ', dataset, collapse = '\n')))
       # load
-      benchmark <- dataset$load[[1]]()
-      modelname <- dataset$modelname
-      models <- .models()
+      dataset <- evaluation$loaddata[[1]]()
 
       # for each evalconfig
-      lapply(names(.eval_configs()), function(evalconfigname) {
-        util$message(sprintf("Current config: '%s'.", evalconfigname))
-        # skip if not in the list of evals to run
-        if(!(evalconfigname %in% run)) {
-          util$message(sprintf("Skipping config '%s'.", evalconfigname))
-          return(F)
-        }
-        # skip if outputfile already exists
-        outfile <- paste0(dataset$file, '-scored-', evalconfigname, '.tsv')
-        if(file.exists(outfile)) {
-          util$message(sprintf("Outputfile '%s' already exists! Skipping config '%s'.", outfile, evalconfigname))
-          return(F)
-        }
-        rdsfile <- gsub('[.][^.]+$', '.rds', outfile) # replace the suffix with rds
-
-        evalconfig <- .eval_configs()[[evalconfigname]](modelname, models)
-        # define the function to apply for each row in the benchmark file
-        rowfun <- function(i) {
-          util$message(sprintf('Processing row %s/%s', i, nrow(benchmark)))
-          row <- benchmark[i,]
-          util$message(sprintf('Processing row %s/%s: <%s,%s>', i, nrow(benchmark), row$word1, row$word2))
-          result <- evalconfig$score(row$word1, row$word2)
-          # combine row with the concise result which is a dataframe row
-          row <- cbind(row, result$concise)
-          # return combined row and the full result (for information purposes)
-          return(list(
-            dfrow = row,
-            full = result$full
-          ))
-        }
-
-        # run the evalutaion
-        ind <- seq_len(nrow(benchmark))
-        if(is.null(par) || par <= 1) {
-          evalconfig$init()
-          scores <- lapply(X = ind, FUN = rowfun)
-        } else {
-          scores <- cclDef$lapply.par(
-            ccl = par,
-            exportitems = c('evalconfigname','evalconfig', 'benchmark', 'dataset','modelname', 'models', 'rowfun'),
-            exportitemsenvir = environment(),
-            initializationfun = function(){ library(senseasim); ft$.init(); evalconfig$init() },
-            X = ind,
-            FUN = rowfun
-          )
-        }
-
-        # save the results
-        saveRDS(scores, file = rdsfile) # save the full results
-        scores <- lapply(scores, "[[", 1) %>% bind_rows # select only the concise result and make a dataframe
-        write.table(scores, quote = F, sep = '\t', row.names = F, col.names = T, file = outfile)
-
-      })
-      return(T)
+      outfile <- paste0(evaluation$filename, '-scored-', evaluation$vsmodelname, '__', evaluation$senseinventory, '__', evaluation$scorefun)
+      res <- .evaluate(dataset, evaluation$vsmodelname, evaluation$senseinventory, evaluation$scorefun, par, outfile)
+      # result is a list of datapoint scores and correlation scores
+      return(res)
     });
+    return(results)
   }
 
-  tryeval <- function(par = NULL, dsetfilterfun = function(dset) !is.na(dset$modelname), run = list('rand')) {
+  .try.run.eval <- function(par = NULL, evalfilter = function(e) T) {
     tryCatch(
       expr = {
-        r <- eval(par, dsetfilterfun, run)
+        r <- .run.eval(par, evalfilter)
         util$sendmessage(subject = util$as.messagestring('Computation Finished! <EOM>'))
         return(r)
       },
