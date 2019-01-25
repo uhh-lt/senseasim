@@ -111,7 +111,9 @@ with(evaluate, {
       row <- dataset[i,]
       util$message(sprintf('Processing row %s/%s: <%s,%s> with (%s, %s, %s)', i, nrow(dataset), row$word1, row$word2, vsmodelname, senseinventoryname, scorefunname))
       result <- scorefun(vsmodelname, senseinventoryname, row$word1, row$word2, if(!is.null(row$pos1)) row$pos1 else 'N', if(!is.null(row$pos2)) row$pos2 else 'N')
-      # combine row with the concise result which is a dataframe row
+      # combine row with the concise result
+      if(!is.data.frame(result$concise))
+        result$concise <- data.frame(result$concise, stringsAsFactors=F)
       row <- cbind(row, result$concise)
       # return combined row and the full result (for information purposes)
       return(list(
@@ -134,32 +136,35 @@ with(evaluate, {
         FUN = rowfun
       )
     }
+    # combine concise results
+    scoredt <- c(lapply(scores, '[[', 'dtrow'), fill=T)
+    scoredt <- do.call(rbind, scoredt)
+    # save results
     if(!is.null(outfile)){
       # save full results as rds
       saveRDS(scores, file = paste0(outfile,'.rds')) # from each sublist select the 'full' entry
       # save concise results as data.table in tsv format
-      scores <- do.call(rbind, lapply(scores, '[[', 'dtrow'))
-      write.table(scores, quote=F, sep ='\t', row.names=F, col.names=T, file=paste0(outfile, '.tsv'))
+      write.table(scoredt, quote=F, sep ='\t', row.names=F, col.names=T, file=paste0(outfile, '.tsv'))
     }
     # compute correlationscores for every valuename
     correlations <- lapply(.scorefuns[[scorefunname]]$valuenames, function(valuename) {
-      .correlation(scores, xname='score', yname=valuename)
+      .correlation(scoredt, xname='score', yname=valuename)
     })
-    names(correlations) <- paste0(scorefunname, '$', .scorefuns[[scorefunname]]$valuenames)
+    names(correlations) <- paste0(scorefunname, '__', .scorefuns[[scorefunname]]$valuenames)
 
     # return the computed scores
     return(list(
-      scores = scores,
+      scores = scoredt,
       correlations = correlations
     ))
   }
 
   .correlation <- function(dt, xname, yname, remove.unk = T){
-    x <- dt[,xname]
-    y <- dt[,yname]
-    if(remove.unk & 't1.is.unk' %in% colnames(dt) & 't2.is.unk' %in% colnames(dt)){
-      x <- dt[!(t1.is.unk | t2.is.unk), xname]
-      y <- dt[!(t1.is.unk | t2.is.unk), yname]
+    x <- dt[, get(xname)]
+    y <- dt[, get(yname)]
+    if(remove.unk && 't1.is.unk' %in% colnames(dt) && 't2.is.unk' %in% colnames(dt)){
+      x <- dt[!(t1.is.unk | t2.is.unk), get(xname)]
+      y <- dt[!(t1.is.unk | t2.is.unk), get(yname)]
     }
     cscore <- cor(x=x, y=y, use='pairwise.complete.obs', method='spearman')
     return(cscore)
@@ -185,8 +190,17 @@ with(evaluate, {
       outfile <- paste0(evaluation$filename, '-scored-', evaluation$vsmodelname, '__', evaluation$senseinventory, '__', evaluation$scorefun)
       res <- .evaluate(dataset, evaluation$vsmodelname, evaluation$senseinventory, evaluation$scorefun, par, outfile)
       # result is a list of datapoint scores and correlation scores
-      return(res)
+
+      # combine result with evaluation row
+      if(!is.data.frame(res$correlations))
+        res$correlations <- data.frame(res$correlations, stringsAsFactors=F)
+      evaluation <- cbind(evaluation, res$correlations)
+
+      return(evaluation)
     });
+
+    # results <- c(results, fill=T)
+    results <- do.call(rbind, results)
     return(results)
   }
 
