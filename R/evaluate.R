@@ -129,7 +129,7 @@ with(evaluate, {
     else {
       scores <- cclDef$lapply.par(
         ccl = par,
-        exportitems = c('dataset', 'vsmodelname', 'senseinventoryname', 'rowfun'),
+        exportitems = ls(envir = environment()),
         exportitemsenvir = environment(),
         initializationfun = function(){ library(senseasim); senseasim$.init(); },
         X = ind,
@@ -137,7 +137,7 @@ with(evaluate, {
       )
     }
     # combine concise results
-    scoredt <- c(lapply(scores, '[[', 'dtrow'), fill=T)
+    scoredt <- c(lapply(lapply(scores, '[[', 'dtrow'), data.table::data.table, fill=T))
     scoredt <- do.call(rbind, scoredt)
     # save results
     if(!is.null(outfile)){
