@@ -125,8 +125,8 @@ with(wsi, {
       sims <- jbtmodel$sim(term=term, POS=POS)
       if(nrow(sims) < 1){
         util$message(sprintf('Jbtmodel \'%s\' returned no similarity terms for \'%s\'. Using vector space similarities.', jbtmodel$name, term))
-        sims <- vs.similarities(term, vsmodel, simfun, simfun.name)
-        sims$term <- rownames(sims)
+        result <- induceby.simcluster.vsm(term, POS, vsmodel, topn.similar.terms, simfun, simfun.name, simfun.issymmetric, thresh, minsize, cluster.fun, cluster.fun.name)
+        return(result)
       }
       # the most similar term should be the term itself, remove it
       sims <- sims[-c(1),]
