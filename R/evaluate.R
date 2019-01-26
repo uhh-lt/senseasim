@@ -17,7 +17,7 @@ with(evaluate, {
   #'
   .datasets <- function(path = file.path(cache$data_dir(), 'sim-multilang','SemR-11')) {
     dt <- data.table::data.table(filename = list.files(path, pattern = '^.+[.]dataset$', full.names = T))
-    dt[,id:=.I]
+    dt[,datasetid:=.I]
     dt$basename <- basename(dt$filename)
     dt$lang <- gsub('^([^-]+)-([^.]+).dataset$', '\\1', dt$basename)
     dt$type <- gsub('^([^-]+)-([^.]+).dataset$', '\\2', dt$basename)
@@ -182,7 +182,8 @@ with(evaluate, {
     # for each evaluation score to be computed
     results <- lapply(evalind, function(eval_i) {
       evaluation <- evaluations[eval_i,]
-      #util$message(sprintf('Current dataset: [%d]\n%s', i_d, paste0('\t', colnames(dataset), ': ', dataset, collapse = '\n')))
+      evaluation_ <- evaluation[,-'loaddata', with=F]
+      util$message(sprintf('Current eval: [%d] \n%s', eval_i, paste0('\t', colnames(evaluation_), ': ', evaluation_, collapse = '\n')))
       # load
       dataset <- evaluation$loaddata[[1]]()
 
@@ -201,6 +202,12 @@ with(evaluate, {
 
     # results <- c(results, fill=T)
     results <- do.call(rbind, results)
+
+    resultsfile <- paste0('results-', format(Sys.time(), "%Y%m%d-%H%M%S"))
+    saveRDS(results, file = paste0(resultsfile, 'rds'))
+    write.table(results[,-'loaddata', with=F], quote=F, sep ='\t', row.names=F, col.names=T, file=paste0(resultsfile, 'rds'))
+
+
     return(results)
   }
 
