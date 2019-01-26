@@ -108,7 +108,7 @@ with(evaluate, {
 
   .evaluate.row <- function(evalrow, evali=1, evaln=1, par=NULL){
     evaluation_ <- evalrow[,-'loaddata', with=F]
-    util$message(sprintf('Current eval: [%d/%d] \n%s', evali, length(evaln),  paste0('\t', colnames(evaluation_), ': ', evaluation_, collapse = '\n')))
+    util$message(sprintf('Current eval: [%d/%d] \n%s', evali, evaln,  paste0('\t', colnames(evaluation_), ': ', evaluation_, collapse = '\n')))
     # load
     dataset <- evalrow$loaddata[[1]]()
 
