@@ -151,7 +151,8 @@ with(jbt, {
         return(sim)
       }
     }
-    return(list())
+    return(setNames(data.frame(matrix(ncol = 2, nrow = 0)), c('jbtterm', 'score'))
+)
   }
 
   #'
