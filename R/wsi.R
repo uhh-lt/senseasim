@@ -128,12 +128,19 @@ with(wsi, {
         result <- induceby.simcluster.vsm(term=term, vsmodel=vsmodel, topn.similar.terms=topn.similar.terms, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
         return(result)
       }
-      # the most similar term should be the term itself, remove it
-      sims <- sims[-c(1),]
+      sims <- sims[-c(1),] # the most similar term should be the term itself, remove it
+      if(nrow(sims) < 2){
+        # no need for clustering only one term
+        labels <- list()
+        labels[[sims$term[[1]]]] <- 1
+        itemlists <- list(list(`1`=sims$term[[1]]))
+        result <- list(labels = labels, itemlists = itemlists)
+        return(result)
+      }
       result <- induceby.simcluster.terms(terms=sims$term, vsmodel=vsmodel, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
       return(result)
     })
-    if(is.numeric(minsize) & minsize > 1){
+    if(is.numeric(minsize) && minsize > 1){
       result$itemlists <- Filter(function(l) length(l) >= minsize, result$itemlists)
     }
     return(result)
