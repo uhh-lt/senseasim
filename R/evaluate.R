@@ -124,47 +124,51 @@ with(evaluate, {
     return(evaluation_result)
   }
 
-  .evaluate <- function(dataset, vsmodelname, senseinventoryname, scorefunname = names(.scorefuns)[[1]], par=NULL, outfile=NULL) {
-    scorefun <- .scorefuns[[scorefunname]]$fun
-    rowfun <- function(i) {
-      row <- dataset[i,]
-      util$message(sprintf('Processing row %s/%s: <%s,%s> with (%s, %s, %s)', i, nrow(dataset), row$word1, row$word2, vsmodelname, senseinventoryname, scorefunname))
-      result <- scorefun(vsmodelname, senseinventoryname, row$word1, row$word2, if(!is.null(row$pos1)) row$pos1 else 'N', if(!is.null(row$pos2)) row$pos2 else 'N')
-      # combine row with the concise result
-      if(!is.data.frame(result$concise))
-        result$concise <- data.frame(result$concise, stringsAsFactors=F)
-      row <- cbind(row, result$concise)
-      # return combined row and the full result (for information purposes)
-      return(list(
-        dtrow = row,
-        full = result$full
-      ))
+  .evaluate <- function(dataset, vsmodelname, senseinventoryname, scorefunname = names(.scorefuns)[[1]], par, outfile) {
+    if(file.exists(paste0(outfile, '.tsv'))){
+      scoredt <- data.table::fread(paste0(outfile, '.tsv'), sep='\t', header=T, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=T, quote="")
     }
+    else{
+      scorefun <- .scorefuns[[scorefunname]]$fun
+      rowfun <- function(i) {
+        row <- dataset[i,]
+        util$message(sprintf('Processing row %s/%s: <%s,%s> with (%s, %s, %s)', i, nrow(dataset), row$word1, row$word2, vsmodelname, senseinventoryname, scorefunname))
+        result <- scorefun(vsmodelname, senseinventoryname, row$word1, row$word2, if(!is.null(row$pos1)) row$pos1 else 'N', if(!is.null(row$pos2)) row$pos2 else 'N')
+        # combine row with the concise result
+        if(!is.data.frame(result$concise))
+          result$concise <- data.frame(result$concise, stringsAsFactors=F)
+        row <- cbind(row, result$concise)
+        # return combined row and the full result (for information purposes)
+        return(list(
+          dtrow = row,
+          full = result$full
+        ))
+      }
 
-    # run the evaluation (either locally or in paralell)
-    ind <- seq_len(nrow(dataset))
-    if(is.null(par) || par <= 1)
-      scores <- lapply(X = ind, FUN = rowfun)
-    else {
-      scores <- cclDef$lapply.par(
-        ccl = par,
-        exportitems = ls(envir = environment()),
-        exportitemsenvir = environment(),
-        initializationfun = function(){ library(senseasim); senseasim$.init(); },
-        X = ind,
-        FUN = rowfun
-      )
-    }
-    # combine concise results
-    scoredt <- c(lapply(lapply(scores, '[[', 'dtrow'), data.table::data.table, fill=T))
-    scoredt <- do.call(rbind, scoredt)
-    # save results
-    if(!is.null(outfile)){
+      # run the evaluation (either locally or in paralell)
+      ind <- seq_len(nrow(dataset))
+      if(is.null(par) || par <= 1)
+        scores <- lapply(X = ind, FUN = rowfun)
+      else {
+        scores <- cclDef$lapply.par(
+          ccl = par,
+          exportitems = ls(envir = environment()),
+          exportitemsenvir = environment(),
+          initializationfun = function(){ library(senseasim); senseasim$.init(); },
+          X = ind,
+          FUN = rowfun
+        )
+      }
+      # combine concise results
+      scoredt <- c(lapply(lapply(scores, '[[', 'dtrow'), data.table::data.table, fill=T))
+      scoredt <- do.call(rbind, scoredt)
+      # save results
       # save full results as rds
       saveRDS(scores, file = paste0(outfile,'.rds')) # from each sublist select the 'full' entry
       # save concise results as data.table in tsv format
       write.table(scoredt, quote=F, sep ='\t', row.names=F, col.names=T, file=paste0(outfile, '.tsv'))
     }
+
     # compute correlationscores for every valuename
     correlations <- lapply(.scorefuns[[scorefunname]]$valuenames, function(valuename) {
       .correlation(scoredt, xname='score', yname=valuename)
