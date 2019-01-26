@@ -124,7 +124,7 @@ with(wsi, {
     result <- cache$load(filename = fname, computefun = function() {
       sims <- jbtmodel$sim(term=term, POS=POS)
       # the most similar term should be the term itself, remove it
-      if(nrow(sims) > 0)
+      if(nrow(sims) > 1)
         sims <- sims[-c(1),]
       result <- induceby.simcluster.terms(terms=sims$term, vsmodel=vsmodel, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
       return(result)
