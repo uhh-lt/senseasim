@@ -16,6 +16,9 @@ with(vsm, {
   }
 
   .models_available <- function() { c(
+    # automatically add models
+    .fasttext.generate_cc_from_dir(paste0(cache$data_dir(),'/fasttext/cc-157')),
+    .txt.getembeddings(),
     # manually define some models
     list(
       en_ft_simplewiki_300d = list(
@@ -39,138 +42,8 @@ with(vsm, {
         ),
         getvector = function(word_or_index) .fasttext.get_vector('en_ft_wiki_300d', word_or_index),
         getterm = function(index) .fasttext.get_term('en_ft_wiki_300d', index)
-      ),
-      #
-      #
-      #
-      en_glove_6B_50d = list(
-        lang = 'en',
-        basename = 'glove_6B_50d',
-        init = function() .txt.load_matrix (
-          filelocation = paste0(cache$data_dir(),'/glove/glove.6B.50d.txt'),
-          unk = 'unknown',
-          transformer = function(w) tolower(w)
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d'),
-        getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d')
-      ),
-      en_glove_6B_50d_1K = list(
-        lang = 'en',
-        basename = 'glove_6B_50d_1K',
-        init = function() .txt.load_matrix (
-          filelocation = paste0(cache$data_dir(),'/glove/glove.6B.50d.1K.txt'),
-          unk = 'the',
-          transformer = function(w) tolower(w)
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d_1K'),
-        getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d_1K')
-      ),
-      en_w2v_gnews_300 = list(
-        lang = 'en',
-        basename = 'w2v_gnews_300',
-        init = function() .txt.load_matrix (
-          filelocation = paste0(cache$data_dir(), '/w2v/GoogleNews-vectors-negative300.txt'),
-          transformer = function(w) w,
-          unk = 'unknown'
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_w2v_gnews_300'),
-        getterm = function(index) .txt.get_term(index, 'en_w2v_gnews_300')
-      ),
-      en_glove_6B_300d = list(
-        lang = 'en',
-        basename = 'glove_6B_300d',
-        init = function() .txt.load_matrix (
-          filelocation = paste0(cache$data_dir(),'/glove/glove.6B.300d.txt'),
-          unk = 'unknown',
-          transformer = function(w) tolower(w)
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_300d'),
-        getterm = function(index) .txt.get_term(index, 'en_glove_6B_300d')
-      ),
-      en_sympat300d = list(
-        lang = 'en',
-        basename = 'sympat300d',
-        init = function() .txt.load_matrix (
-          filelocation = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_300.txt'),
-          unk = 'UNK',
-          transformer = function(w) tolower(w)
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_sympat300d'),
-        getterm = function(index) .txt.get_term(index, 'en_sympat300d')
-      ),
-      en_sympat500d = list(
-        lang = 'en',
-        basename = 'sympat500d',
-        init = function() .txt.load_matrix (
-          filelocation = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_500.txt'),
-          unk = 'UNK',
-          transformer = function(w) tolower(w)
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_sympat500d'),
-        getterm = function(index) .txt.get_term(index, 'en_sympat500d')
-      ),
-      en_sympat10000d = list(
-        lang = 'en',
-        basename = 'sympat10000d',
-        init = function() .txt.load_matrix (
-          filelocation = paste0(cache$data_dir(),'/sympatEmb/sp_plus_embeddings_10000.txt'),
-          unk = 'UNK',
-          transformer = function(w) tolower(w)
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_sympat10000d'),
-        getterm = function(index) .txt.get_term(index, 'en_sympat10000d')
-      ),
-      en_paragramSL = list(
-        lang = 'en',
-        basename = 'paragramSL',
-        init = function() .txt.load_matrix (
-          filelocation = paste0(cache$data_dir(),'/paragram/paragram_300_sl999/paragram_300_sl999.txt'),
-          unk = 'unknown',
-          transformer = function(w) tolower(w)
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_paragramSL'),
-        getterm = function(index) .txt.get_term(index, 'en_paragramSL')
-      ),
-      en_paragramWS = list(
-        lang = 'en',
-        basename = 'paragramWS',
-        init = function() .txt.load_matrix (
-          filelocation = paste0(cache$data_dir(),'/paragram/paragram_300_ws353/paragram_300_ws353.txt'),
-          unk = 'unknown',
-          transformer = function(w) tolower(w)
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_paragramWS'),
-        getterm = function(index) .txt.get_term(index, 'en_paragramWS')
-      ),
-      #
-      #
-      #
-      en_lsa_100k = list(
-        lang = 'en',
-        basename = 'lsa_100k',
-        init = function() .rda.load_matrix (
-          filelocation = paste0(cache$data_dir(),'/lsafun/EN_100k_lsa.rda'),
-          unk = 'unknown',
-          transformer = function(w) tolower(w)
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_lsa_100k'),
-        getterm = function(index) .txt.get_term(index, 'en_lsa_100k')
-      ),
-      en_lsa_100k_hal = list(
-        lang = 'en',
-        basename = 'lsa_100k_hal',
-        init = function() .rda.load_matrix (
-          filelocation = paste0(cache$data_dir(),'/lsafun/EN_100k.rda'),
-          unk = 'unknown',
-          transformer = function(w) tolower(w)
-        ),
-        getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_lsa_100k_hal'),
-        getterm = function(index) .txt.get_term(index, 'en_lsa_100k_hal')
       )
-      #
-    ),
-    # automatically add models
-    .fasttext.generate_cc_from_dir(paste0(cache$data_dir(),'/fasttext/cc-157'))
+    )
   )}
 
   .modelnames_for_lang <- function(lang) {
@@ -185,6 +58,133 @@ with(vsm, {
     }
     return(NULL)
   }
+
+  .txt.getembeddings <- function() { list(
+    #
+    # Text Embeddings
+    #
+    en_glove_6B_50d = list(
+      lang = 'en',
+      basename = 'glove_6B_50d',
+      init = function() .txt.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/glove/glove.6B.50d.txt'),
+        unk = 'unknown',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d'),
+      getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d')
+    ),
+    en_glove_6B_50d_1K = list(
+      lang = 'en',
+      basename = 'glove_6B_50d_1K',
+      init = function() .txt.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/glove/glove.6B.50d.1K.txt'),
+        unk = 'the',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_50d_1K'),
+      getterm = function(index) .txt.get_term(index, 'en_glove_6B_50d_1K')
+    ),
+    en_w2v_gnews_300 = list(
+      lang = 'en',
+      basename = 'w2v_gnews_300',
+      init = function() .txt.load_matrix (
+        filelocation = paste0(cache$data_dir(), '/w2v/GoogleNews-vectors-negative300.txt'),
+        transformer = function(w) w,
+        unk = 'unknown'
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_w2v_gnews_300'),
+      getterm = function(index) .txt.get_term(index, 'en_w2v_gnews_300')
+    ),
+    en_glove_6B_300d = list(
+      lang = 'en',
+      basename = 'glove_6B_300d',
+      init = function() .txt.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/glove/glove.6B.300d.txt'),
+        unk = 'unknown',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_glove_6B_300d'),
+      getterm = function(index) .txt.get_term(index, 'en_glove_6B_300d')
+    ),
+    en_sympat300d = list(
+      lang = 'en',
+      basename = 'sympat300d',
+      init = function() .txt.load_matrix (
+        filelocation = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_300.txt'),
+        unk = 'UNK',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_sympat300d'),
+      getterm = function(index) .txt.get_term(index, 'en_sympat300d')
+    ),
+    en_sympat500d = list(
+      lang = 'en',
+      basename = 'sympat500d',
+      init = function() .txt.load_matrix (
+        filelocation = paste0(Sys.getenv(c('DATA_HOME')),'/sympatEmb/sp_plus_embeddings_500.txt'),
+        unk = 'UNK',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_sympat500d'),
+      getterm = function(index) .txt.get_term(index, 'en_sympat500d')
+    ),
+    en_sympat10000d = list(
+      lang = 'en',
+      basename = 'sympat10000d',
+      init = function() .txt.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/sympatEmb/sp_plus_embeddings_10000.txt'),
+        unk = 'UNK',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_sympat10000d'),
+      getterm = function(index) .txt.get_term(index, 'en_sympat10000d')
+    ),
+    en_paragramSL = list(
+      lang = 'en',
+      basename = 'paragramSL',
+      init = function() .txt.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/paragram/paragram_300_sl999/paragram_300_sl999.txt'),
+        unk = 'unknown',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_paragramSL'),
+      getterm = function(index) .txt.get_term(index, 'en_paragramSL')
+    ),
+    en_paragramWS = list(
+      lang = 'en',
+      basename = 'paragramWS',
+      init = function() .txt.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/paragram/paragram_300_ws353/paragram_300_ws353.txt'),
+        unk = 'unknown',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_paragramWS'),
+      getterm = function(index) .txt.get_term(index, 'en_paragramWS')
+    ),
+    en_lsa_100k = list(
+      lang = 'en',
+      basename = 'lsa_100k',
+      init = function() .rda.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/lsafun/EN_100k_lsa.rda'),
+        unk = 'unknown',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_lsa_100k'),
+      getterm = function(index) .txt.get_term(index, 'en_lsa_100k')
+    ),
+    en_lsa_100k_hal = list(
+      lang = 'en',
+      basename = 'lsa_100k_hal',
+      init = function() .rda.load_matrix (
+        filelocation = paste0(cache$data_dir(),'/lsafun/EN_100k.rda'),
+        unk = 'unknown',
+        transformer = function(w) tolower(w)
+      ),
+      getvector = function(word_or_index) .txt.get_vector(word_or_index, 'en_lsa_100k_hal'),
+      getterm = function(index) .txt.get_term(index, 'en_lsa_100k_hal')
+    )
+  ) }
 
   .rda.build_bigmatrix <- function(filename) {
     # get the filenames

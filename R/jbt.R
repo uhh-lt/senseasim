@@ -28,10 +28,10 @@ with(jbt, {
   .sense_fine_urlpattern_nopos='http://ltmaggie.informatik.uni-hamburg.de/jobimviz/ws/api/${model}/jo/senses/${term}?format=json&sensetype=CW-finer'
 
   .jbt_models_available <- function() list(
+    en_jbt_trigram = list(lang = 'en', apiname = 'trigram', sensemodel = F, finersensemodel = F, POS = F),
     en_jbt_stanfordNew = list(lang = 'en', apiname = 'stanfordNew', sensemodel = T, finersensemodel = T, POS = T),
     en_jbt_stanfordContext = list(lang = 'en', apiname = 'stanfordContext', sensemodel = F, finersensemodel = F, POS = T),
     en_jbt_wikipediaStanford = list(lang = 'en', apiname = 'wikipediaStanford', sensemodel = F, finersensemodel = F, POS = T),
-    en_jbt_trigram = list(lang = 'en', apiname = 'trigram', sensemodel = F, finersensemodel = F, POS = F),
     en_jbt_medlineTrigram = list(lang = 'en', apiname = 'medlineTrigram', sensemodel = F, finersensemodel = F, POS = F),
     en_jbt_medlineParsed = list(lang = 'en', apiname = 'medlineParsed', sensemodel = F, finersensemodel = F, POS = T),
     en_jbt_medlineTrigramMwe = list(lang = 'en', apiname = 'medlineTrigramMwe', sensemodel = F, finersensemodel = F, POS = F),
@@ -45,8 +45,8 @@ with(jbt, {
     en_jbt_stanford = list(lang = 'en', apiname = 'stanford', sensemodel = F, finersensemodel = F, POS = T),
     en_jbt_google1520 = list(lang = 'en', apiname = 'google1520', sensemodel = F, finersensemodel = F, POS = F),
     en_jbt_wikipediaTrigram = list(lang = 'en', apiname = 'wikipediaTrigram', sensemodel = F, finersensemodel = F, POS = F),
-    de_jbt_germanParsedLemma = list(lang = 'de', apiname = 'germanParsedLemma', sensemodel = F, finersensemodel = F, POS = T),
     de_jbt_germanTrigram = list(lang = 'de', apiname = 'germanTrigram', sensemodel = F, finersensemodel = F, POS = F),
+    de_jbt_germanParsedLemma = list(lang = 'de', apiname = 'germanParsedLemma', sensemodel = F, finersensemodel = F, POS = T),
     de_jbt_germanTrigramMwe = list(lang = 'de', apiname = 'germanTrigramMwe', sensemodel = F, finersensemodel = F, POS = F),
     de_jbt_germanEducrawl = list(lang = 'de', apiname = 'germanEducrawl', sensemodel = F, finersensemodel = F, POS = T),
     de_jbt_twitterDETrigram = list(lang = 'de', apiname = 'twitterDETrigram', sensemodel = F, finersensemodel = F, POS = F),
@@ -55,8 +55,8 @@ with(jbt, {
     ar_jbt_arabicTrigram = list(lang = 'ar', apiname = 'arabicTrigram', sensemodel = F, finersensemodel = F, POS = F),
     bn_jbt_bengaliBigram = list(lang = 'bn', apiname = 'bengaliBigram', sensemodel = F, finersensemodel = F, POS = F),
     he_jbt_hebrewTrigram = list(lang = 'he', apiname = 'hebrewTrigram', sensemodel = F, finersensemodel = F, POS = F),
-    hi_jbt_hindiBigram = list(lang = 'hi', apiname = 'hindiBigram', sensemodel = F, finersensemodel = F, POS = F),
     hi_jbt_hindiTrigram = list(lang = 'hi', apiname = 'hindiTrigram', sensemodel = F, finersensemodel = F, POS = F),
+    hi_jbt_hindiBigram = list(lang = 'hi', apiname = 'hindiBigram', sensemodel = F, finersensemodel = F, POS = F),
     nl_jbt_dutchTrigram = list(lang = 'nl', apiname = 'dutchTrigram', sensemodel = F, finersensemodel = F, POS = F),
     ru_jbt_russianTrigram = list(lang = 'ru', apiname = 'russianTrigram', sensemodel = F, finersensemodel = F, POS = F),
     sv_jbt_swedishTrigramMwe = list(lang = 'sv', apiname = 'swedishTrigramMwe', sensemodel = F, finersensemodel = F, POS = F),
