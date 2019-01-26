@@ -72,7 +72,7 @@ with(sensevectors, {
     # get unique terms
     R$unique_i <- which(!duplicated(R$index$idx))
     uniqueindex <- R$index[R$unique_i,]
-    uniqueindex_ <- uniqueindex[!(uniqueindex$unknown | uniqueindex_$sense == 0),] # remove unknowns and the term itself
+    uniqueindex_ <- uniqueindex[!(uniqueindex$unknown | uniqueindex$sense == 0),] # remove unknowns and the term itself
 
     # if processed sense inventory is empty we can't return anything
     if(length(uniqueindex_) <= 0) {

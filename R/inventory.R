@@ -114,7 +114,8 @@ with(inventory, {
         inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
       }
       # for each vsm model and jbt model in the same language generate an inventory
-      for(vsmodelname in vsm$.modelnames_for_lang(jbtmodel$lang)){
+      vsmmodelsforlang <- vsm$.modelnames_for_lang(jbtmodel$lang)
+      inventories_for_jbtsim <- lapply(vsmmodelsforlang, function(vsmodelname) {
         vsmodel <- vsm$models[[vsmodelname]]
         # senses by clustering jbt similar terms
         newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim500cluster_mcl')
@@ -134,8 +135,12 @@ with(inventory, {
             cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
             cluster.fun.name = 'mcl_tmean_nosingletons_noloops')$itemlists
         )
-        inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
-      }
+        inventory_for_jbtsim <- list()
+        inventory_for_jbtsim[[newjbtinventoryname]] <- newjbtinventory
+        return(inventory_for_jbtsim)
+      })
+      inventories_for_jbtsim <- unlist(inventories_for_jbtsim, recursive = F, use.names = T)
+      inventories_for_jbtmodel <- c(inventories_for_jbtmodel, inventories_for_jbtsim)
       return(inventories_for_jbtmodel)
     })
     result <- unlist(result, recursive = F, use.names = T)

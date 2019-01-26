@@ -102,7 +102,26 @@ with(evaluate, {
     })
     dn <- c(dn, fill=T)
     dn <- do.call(rbind, dn)
+    dn[,evalid:=.I]
     return(dn)
+  }
+
+  .evaluate.row <- function(evalrow, evali=1, evaln=1, par=NULL){
+    evaluation_ <- evalrow[,-'loaddata', with=F]
+    util$message(sprintf('Current eval: [%d/%d] \n%s', evali, length(evaln),  paste0('\t', colnames(evaluation_), ': ', evaluation_, collapse = '\n')))
+    # load
+    dataset <- evalrow$loaddata[[1]]()
+
+    # for each evalconfig
+    outfile <- paste0(evalrow$filename, '-scored-', evalrow$vsmodelname, '__', evalrow$senseinventory, '__', evalrow$scorefun)
+    res <- .evaluate(dataset, evalrow$vsmodelname, evalrow$senseinventory, evalrow$scorefun, par, outfile)
+    # result is a list of datapoint scores and correlation scores
+
+    # combine result with evaluation row
+    if(!is.data.frame(res$correlations))
+      res$correlations <- data.frame(res$correlations, stringsAsFactors=F)
+    evaluation_result <- cbind(evalrow, res$correlations)
+    return(evaluation_result)
   }
 
   .evaluate <- function(dataset, vsmodelname, senseinventoryname, scorefunname = names(.scorefuns)[[1]], par=NULL, outfile=NULL) {
@@ -180,24 +199,11 @@ with(evaluate, {
       evalind <- Filter(function(i) evalfilter(evaluations[i,]), evalind)
 
     # for each evaluation score to be computed
-    results <- lapply(evalind, function(eval_i) {
+    results <- lapply(seq_along(evalind), function(eval_i_ind) {
+      eval_i <- evalind[[eval_i_ind]]
       evaluation <- evaluations[eval_i,]
-      evaluation_ <- evaluation[,-'loaddata', with=F]
-      util$message(sprintf('Current eval: [%d] \n%s', eval_i, paste0('\t', colnames(evaluation_), ': ', evaluation_, collapse = '\n')))
-      # load
-      dataset <- evaluation$loaddata[[1]]()
-
-      # for each evalconfig
-      outfile <- paste0(evaluation$filename, '-scored-', evaluation$vsmodelname, '__', evaluation$senseinventory, '__', evaluation$scorefun)
-      res <- .evaluate(dataset, evaluation$vsmodelname, evaluation$senseinventory, evaluation$scorefun, par, outfile)
-      # result is a list of datapoint scores and correlation scores
-
-      # combine result with evaluation row
-      if(!is.data.frame(res$correlations))
-        res$correlations <- data.frame(res$correlations, stringsAsFactors=F)
-      evaluation <- cbind(evaluation, res$correlations)
-
-      return(evaluation)
+      evaluation_result <- .evaluate.row(evaluation, eval_i_ind, length(evalind), par)
+      return(evaluation_result)
     });
 
     # results <- c(results, fill=T)
