@@ -61,7 +61,7 @@ with(sensevectors, {
       for(sense_term in sense_terms) {
         sense_term_clean <- gsub('\\s+','', gsub('#.*','',gsub(':.*','',sense_term))) # clean terms, either isas (':') or senses ('#'), clear POS and remove whitespaces
         mterm <- vsmodel$transform(sense_term_clean)
-        if(length(mterm$term) < 1)
+        if(nchar(mterm$term) < 1)
           next()
         mterm$original <- sense_term
         mterm$original_clean <- sense_term_clean
