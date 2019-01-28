@@ -214,7 +214,7 @@ with(evaluate, {
     results <- c(results, fill=T)
     results <- do.call(rbind, results)
 
-    resultsfile <- paste0('results-', format(Sys.time(), "%Y%m%d-%H%M%S"))
+    resultsfile <- paste0('results-', Sys.info()[['nodename']], '-', format(Sys.time(), "%Y%m%d-%H%M%S"))
     saveRDS(results, file = paste0(resultsfile, '.rds'))
     write.table(results[,-'loaddata', with=F], quote=F, sep ='\t', row.names=F, col.names=T, file=paste0(resultsfile, '.tsv'))
 
