@@ -94,14 +94,15 @@ with(evaluate, {
       di$vsmodelname <- vsmodelname
       di <- di[rep(1, times=length(sinventoriesfiltered))]
       di$senseinventory <- sinventoriesfiltered
-      # copy each row and add the scorefun
-      scorefunsrep <- rep(names(.scorefuns), times=nrow(di))
-      di <- di[rep(seq_len(nrow(di)), each=length(.scorefuns))]
-      di$scorefun <- scorefunsrep
       return(di)
     })
     dn <- c(dn, fill=T)
     dn <- do.call(rbind, dn)
+    dn[,eid:=.I]
+    # copy each row and add the scorefun
+    scorefunsrep <- rep(names(.scorefuns), times=nrow(dn))
+    dn <- dn[rep(seq_len(nrow(dn)), each=length(.scorefuns))]
+    dn$scorefun <- scorefunsrep
     dn[,evalid:=.I]
     return(dn)
   }
