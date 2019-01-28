@@ -122,6 +122,11 @@ with(evaluate, {
     if(!is.data.frame(res$correlations))
       res$correlations <- data.frame(res$correlations, stringsAsFactors=F)
     evaluation_result <- cbind(evalrow, res$correlations)
+
+    if('t1.nsenses' %in% colnames(res$scores) && 't2.nsenses' %in% colnames(res$scores))
+      evaluation_result$numsenses_avg <- mean(c(res$scores$t1.nsenses, res$scores$t2.nsenses))
+    else
+      evaluation_result$numsenses_avg <- 1
     return(evaluation_result)
   }
 
