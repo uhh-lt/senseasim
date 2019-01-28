@@ -295,10 +295,3 @@ with(evaluate, {
 
 })
 
-
-# library(senseasim)
-# senseasim$.init()
-# d <- evaluate$.generate_sensevector_variants()
-# d <- d[!is.na(senseinventory),]
-# evaluate$.evaluate(d$load[[1]](), d$vsmodelname[[1]], d$senseinventory, par=2)
-
