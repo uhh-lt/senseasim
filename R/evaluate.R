@@ -236,6 +236,48 @@ with(evaluate, {
     )
   }
 
+
+  .merge.results <- function(results) {
+    #
+    if(!is.data.frame(results))
+      if(is.character(results) && file.exists(results))
+        if(grepl('[.]rds$', results))
+          results <- readRDS(results)
+        else if(grepl('[.]tsv$', results))
+          results <- data.table::fread(file = results, quote = '', sep = '\t', header = T) # write.table(results[,-'loaddata', with=F], quote=F, sep ='\t', row.names=F, col.names=T, file=paste0(resultsfile, '.tsv'))
+        else
+          stop('Unknown suffix.')
+      else
+        stop('Unknown result format.')
+    #
+    evalidcolidx <- which(colnames(results) == 'evalid')
+    scorecolumns <- colnames(results)[(evalidcolidx+1):ncol(results)]
+    merged <- results[,1:evalidcolidx]
+    merged <- unique(merged, by = 'eid')
+    for(scorecolumn in scorecolumns){
+      subdata <- results[, list(get('eid'), get(scorecolumn))]
+      colnames(subdata) <- c('eid', scorecolumn)
+      subdata <- subdata[!is.na(get(scorecolumn)), ] # remove NAs
+      merged <- merge(merged, subdata, by='eid')
+    }
+   return(merged)
+  }
+
+  .interpret.results <- function(mergedresults){
+    evalidcolidx <- which(colnames(mergedresults) == 'evalid')
+    scorecolumns <- colnames(mergedresults)[(evalidcolidx+1):ncol(mergedresults)]
+    interp <- lapply(scorecolumns, function(scorecolumn) {
+      avg <- mean(mergedresults[,get(scorecolumn)])
+      stddev <- sd(mergedresults[,get(scorecolumn)])
+      data.table::data.table(
+        mean = avg,
+        stddev = stddev
+      )
+    })
+    interp <- do.call(rbind, interp)
+    interp$method <- scorecolumns
+  }
+
 })
 
 
