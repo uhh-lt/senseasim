@@ -210,7 +210,7 @@ with(evaluate, {
       return(evaluation_result)
     });
 
-    # results <- c(results, fill=T)
+    results <- c(results, fill=T)
     results <- do.call(rbind, results)
 
     resultsfile <- paste0('results-', format(Sys.time(), "%Y%m%d-%H%M%S"))
