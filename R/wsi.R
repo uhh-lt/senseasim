@@ -14,10 +14,19 @@ with(wsi, {
   #' Note: the most similar term to the given term is the term itself
   #'
   vs.similarities <- function(term_or_idx, vsmodel, simfun = senseasim$cos, simfun.name = 'cos') {
-    util$message(sprintf('Preparing similarity values for term \'%s\' and matrix \'%s\'. ', term_or_idx, vsmodel$name))
+    if(is.character(vsmodel))
+      vsmodelname <- vsmodel
+    else
+      vsmodelname <- vsmodel()$name
 
-    fname <- cache$get_filename(term_or_idx, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', vsmodel$name, '__', simfun.name, '__'))
+
+    util$message(sprintf('Preparing similarity values for term \'%s\' and matrix \'%s\'. ', term_or_idx, vsmodelname))
+
+    fname <- cache$get_filename(term_or_idx, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', vsmodelname, '__', simfun.name, '__'))
     sim <- cache$load(filename = fname, computefun = function() {
+      if(is.character(vsmodel))
+        vsmodel <- vsm$models[[vsmodel]]()
+
       if(!is.null(vsmodel$py)){ # get the similarities from fasttext
         util$message('Using fasttext for similarity computation.')
         sim <- vsmodel$py$nearest_neighbors(term_or_idx, 100000) # get the top 100K terms, that should be sufficient
@@ -46,17 +55,27 @@ with(wsi, {
   #'
   #'
   vs.similarity.matrix <- function(terms, vsmodel, n = 500, identifier = NULL, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T){
+    if(is.character(vsmodel))
+      vsmodelname <- vsmodel
+    else
+      vsmodelname <- vsmodel()$name
+
     n <- min(n, if (is.array(terms) || is.data.frame(terms)) nrow(terms) else length(terms))
     terms <- terms[1:n]
 
     if(is.null(identifier))
       identifier <- digest::digest(terms)
 
-    util$message(sprintf('Preparing similarity matrix of %s terms for \'%s\' based on matrix \'%s\'. ', n, identifier, vsmodel$name))
+    util$message(sprintf('Preparing similarity matrix of %s terms for \'%s\' based on matrix \'%s\'. ', n, identifier, vsmodelname))
 
-    fname <- cache$get_filename(identifier, '', dirname = cache$data_temp_dir(), prefix = paste0('simmat__', vsmodel$name, '__', simfun.name,  '__n', n, '__'))
-    M <- vsmodel$vectors(terms)
+    fname <- cache$get_filename(identifier, '', dirname = cache$data_temp_dir(), prefix = paste0('simmat__', vsmodelname, '__', simfun.name,  '__n', n, '__'))
+
     SIM <- cache$load(filename = fname, computefun = function() {
+      if(is.character(vsmodel))
+        vsmodel <- vsm$models[[vsmodel]]()
+
+      M <- vsmodel$vectors(terms)
+
       if(simfun.issymmetric) {
         i <- seq_len(n-1)
         # compute only lower triangular matrix
@@ -79,13 +98,21 @@ with(wsi, {
   #' get a similarity graph based on transitivity
   #'
   similarity.graph.transitive <- function(term, vsmodel, n = 200, m = 50, simfun = senseasim$cos, simfun.name = 'cos') {
-    n <- min(n, length(vsmodel$vocab))
-    m <- min(m, length(vsmodel$vocab))
+    if(is.character(vsmodel))
+      vsmodelname <- vsmodel
+    else
+      vsmodelname <- vsmodel()$name
 
-    util$message(sprintf('Preparing similarity graph of top %s most similar terms for term \'%s\' and matrix \'%s\' and expand by the top %s most similar terms.', n, term, vsmodel$name, m))
-    fname <- cache$get_filename(term, '', dirname = cache$data_temp_dir(), prefix = paste0('simgraphtrans__', vsmodel$name, '__', simfun.name,  '__n', n, '__m', m, '__'))
+    util$message(sprintf('Preparing similarity graph of top %s most similar terms for term \'%s\' and matrix \'%s\' and expand by the top %s most similar terms.', n, term, vsmodelname, m))
+    fname <- cache$get_filename(term, '', dirname = cache$data_temp_dir(), prefix = paste0('simgraphtrans__', vsmodelname, '__', simfun.name,  '__n', n, '__m', m, '__'))
 
     A <- cache$load(filename = fname, computefun = function() {
+      if(is.character(vsmodel))
+        vsmodel <- vsm$models[[vsmodel]]()
+
+      n <- min(n, length(vsmodel$vocab))
+      m <- min(m, length(vsmodel$vocab))
+
       # get n most simialar terms to term
       sim1 <- wsi$vs.similarities(term, vsmodel, simfun = simfun, simfun.name = simfun.name)
       sim1 <- sim1[1:n,]
@@ -120,7 +147,12 @@ with(wsi, {
   #' induce senses by clustering the similarity matrix
   #'
   induceby.simcluster.jbt <- function(term, POS, jbtmodel, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
-    fname <- cache$get_filename(term, POS, dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterjbt__', jbtmodel$name, '__', vsmodel$name, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
+    if(is.character(vsmodel))
+      vsmodelname <- vsmodel
+    else
+      vsmodelname <- vsmodel()$name
+
+    fname <- cache$get_filename(term, POS, dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterjbt__', jbtmodel$name, '__', vsmodelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       sims <- jbtmodel$sim(term=term, POS=POS)
       if(nrow(sims) < 2){
@@ -150,7 +182,12 @@ with(wsi, {
   #' induce senses by clustering the similarity matrix
   #'
   induceby.simcluster.vsm <- function(term, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
-    fname <- cache$get_filename(term, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclustervsm__', vsmodel$name, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
+    if(is.character(vsmodel))
+      vsmodelname <- vsmodel
+    else
+      vsmodelname <- vsmodel()$name
+
+    fname <- cache$get_filename(term, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclustervsm__', vsmodelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       sims <- vs.similarities(term, vsmodel, simfun = simfun, simfun.name = simfun.name)
       # the most similar term should be the term itself, remove it
@@ -169,8 +206,13 @@ with(wsi, {
   #' induce senses by clustering the similarity matrix of 'terms'
   #'
   induceby.simcluster.terms <- function(terms, vsmodel, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+    if(is.character(vsmodel))
+      vsmodelname <- vsmodel
+    else
+      vsmodelname <- vsmodel()$name
+
     desc <- digest::digest(terms)
-    fname <- cache$get_filename(desc, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterterms__', vsmodel$name, '__', simfun.name, '__', thresh, '__', cluster.fun.name, '__'))
+    fname <- cache$get_filename(desc, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterterms__', vsmodelname, '__', simfun.name, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
       n <- if (is.array(terms) || is.data.frame(terms)) nrow(terms) else length(terms)
       SIM <- vs.similarity.matrix(terms, vsmodel, n = n, identifier = desc, simfun = simfun, simfun.name = simfun.name, simfun.issymmetric = simfun.issymmetric)

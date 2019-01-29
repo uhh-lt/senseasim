@@ -116,28 +116,83 @@ with(inventory, {
       # for each vsm model and jbt model in the same language generate an inventory
       vsmmodelsforlang <- vsm$.modelnames_for_lang(jbtmodel$lang)
       inventories_for_jbtsim <- lapply(vsmmodelsforlang, function(vsmodelname) {
-        vsmodel <- vsm$models[[vsmodelname]]
+
         # senses by clustering jbt similar terms
-        newjbtinventoryname <- stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim500cluster_mcl')
-        newjbtinventory <- list(
+        newmodel_mcl1 <- list(
           lang = jbtmodel$lang,
           senses = function(term, POS) wsi$induceby.simcluster.jbt(
             term = term,
             POS = POS,
             jbtmodel = jbtmodel,
-            vsmodel = vsmodel(),
-            topn.similar.terms = 500,
+            vsmodel = vsmodelname,
+            topn.similar.terms = 400,
+            simfun = senseasim$cos,
+            simfun.name = 'cos',
+            simfun.issymmetric = T,
+            thresh = 0.8,
+            minsize = 3,
+            cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
+            cluster.fun.name = 'mcl400_t0.8_nosingletons_noloops')$itemlists
+        )
+
+        newmodel_mcl2 <- list(
+          lang = jbtmodel$lang,
+          senses = function(term, POS) wsi$induceby.simcluster.jbt(
+            term = term,
+            POS = POS,
+            jbtmodel = jbtmodel,
+            vsmodel = vsmodelname,
+            topn.similar.terms = 400,
             simfun = senseasim$cos,
             simfun.name = 'cos',
             simfun.issymmetric = T,
             thresh = 'mean',
-            minsize = 0,
+            minsize = 3,
             cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'mcl_tmean_nosingletons_noloops')$itemlists
+            cluster.fun.name = 'cw400_tmean_nosingletons_noloops')$itemlists
         )
-        inventory_for_jbtsim <- list()
-        inventory_for_jbtsim[[newjbtinventoryname]] <- newjbtinventory
-        return(inventory_for_jbtsim)
+
+        newmodel_cw1 <- list(
+          lang = jbtmodel$lang,
+          senses = function(term, POS) wsi$induceby.simcluster.jbt(
+            term = term,
+            POS = POS,
+            jbtmodel = jbtmodel,
+            vsmodel = vsmodelname,
+            topn.similar.terms = 400,
+            simfun = senseasim$cos,
+            simfun.name = 'cos',
+            simfun.issymmetric = T,
+            thresh = 0.8,
+            minsize = 3,
+            cluster.fun = function(X) { clust$cw(X, allowsingletons = F, remove_self_loops = T) },
+            cluster.fun.name = 'cw400_t0.8_nosingletons_noloops')$itemlists
+        )
+
+        newmodel_cw2 <- list(
+          lang = jbtmodel$lang,
+          senses = function(term, POS) wsi$induceby.simcluster.jbt(
+            term = term,
+            POS = POS,
+            jbtmodel = jbtmodel,
+            vsmodel = vsmodelname,
+            topn.similar.terms = 400,
+            simfun = senseasim$cos,
+            simfun.name = 'cos',
+            simfun.issymmetric = T,
+            thresh = 'mean',
+            minsize = 3,
+            cluster.fun = function(X) { clust$cw(X, allowsingletons = F, remove_self_loops = T) },
+            cluster.fun.name = 'cw400_tmean_nosingletons_noloops')$itemlists
+        )
+
+        modelsaslist <- list()
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim400cluster_mcl_t0.8')]] <- newmodel_mcl1
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim400cluster_mcl_tmean')]] <- newmodel_mcl2
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim400cluster_cw_t0.8')]] <- newmodel_cw1
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim400cluster_cw_tmean')]] <- newmodel_cw2
+
+        return(modelsaslist)
       })
       inventories_for_jbtsim <- unlist(inventories_for_jbtsim, recursive = F, use.names = T)
       inventories_for_jbtmodel <- c(inventories_for_jbtmodel, inventories_for_jbtsim)
@@ -151,25 +206,74 @@ with(inventory, {
     models <- lapply(names(vsmodels_available), function(vsmodelname) {
       lang <- vsmodels_available[[vsmodelname]]$lang
       vsmbasename <- vsmodels_available[[vsmodelname]]$basename
-      newmodelname <- stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim500cluster_mcl')
-      newmodel = list(
+      newmodel_mcl1 = list(
         lang = lang,
         senses = function(term, POS = NA)
           wsi$induceby.simcluster.vsm(
             term,
-            vsmodel = vsm$models[[vsmodelname]](),
-            topn.similar.terms = 500,
+            vsmodel = vsmodelname,
+            topn.similar.terms = 400,
+            simfun = senseasim$cos,
+            simfun.name = 'cos',
+            simfun.issymmetric = T,
+            thresh = 0.8,
+            minsize = 3,
+            cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
+            cluster.fun.name = 'mcl_400_t0.8_nosingletons_noloops')$itemlists
+      )
+      newmodel_cw1 = list(
+        lang = lang,
+        senses = function(term, POS = NA)
+          wsi$induceby.simcluster.vsm(
+            term,
+            vsmodel = vsmodelname,
+            topn.similar.terms = 400,
+            simfun = senseasim$cos,
+            simfun.name = 'cos',
+            simfun.issymmetric = T,
+            thresh = 0.8,
+            minsize = 3,
+            cluster.fun = function(X) { clust$cw(X, allowsingletons = F, remove_self_loops = T) },
+            cluster.fun.name = 'cw_400_t0.8_nosingletons_noloops')$itemlists
+      )
+      newmodel_mcl2 = list(
+        lang = lang,
+        senses = function(term, POS = NA)
+          wsi$induceby.simcluster.vsm(
+            term,
+            vsmodel = vsmodelname,
+            topn.similar.terms = 400,
             simfun = senseasim$cos,
             simfun.name = 'cos',
             simfun.issymmetric = T,
             thresh = 'mean',
-            minsize = 0,
+            minsize = 3,
             cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'mcl_tmean_nosingletons_noloops')$itemlists
+            cluster.fun.name = 'mcl_400_tmean_nosingletons_noloops')$itemlists
       )
-      modelaslist <- list(newmodel)
-      names(modelaslist) <- newmodelname
-      return(modelaslist)
+      newmodel_cw2 = list(
+        lang = lang,
+        senses = function(term, POS = NA)
+          wsi$induceby.simcluster.vsm(
+            term,
+            vsmodel = vsmodelname,
+            topn.similar.terms = 400,
+            simfun = senseasim$cos,
+            simfun.name = 'cos',
+            simfun.issymmetric = T,
+            thresh = 'mean',
+            minsize = 3,
+            cluster.fun = function(X) { clust$cw(X, allowsingletons = F, remove_self_loops = T) },
+            cluster.fun.name = 'cw_400_tmean_nosingletons_noloops')$itemlists
+      )
+
+      modelsaslist <- list()
+      modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_mcl_t0.8')]] <- newmodel_mcl1
+      modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_t0.8')]] <- newmodel_cw1
+      modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_mcl_tmean')]] <- newmodel_mcl2
+      modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_tmean')]] <- newmodel_cw2
+
+      return(modelsaslist)
     })
     models <- unlist(models, recursive = F, use.names = T)
     return(models)
