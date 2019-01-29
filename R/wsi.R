@@ -19,7 +19,6 @@ with(wsi, {
     else
       vsmodelname <- vsmodel()$name
 
-
     util$message(sprintf('Preparing similarity values for term \'%s\' and matrix \'%s\'. ', term_or_idx, vsmodelname))
 
     fname <- cache$get_filename(term_or_idx, '', dirname = cache$data_temp_dir(), prefix = paste0('sim__', vsmodelname, '__', simfun.name, '__'))
