@@ -7,7 +7,7 @@ with(senseasim, {
     vsmodelname = 'en_glove_6B_50d',
     topn_sense_terms = 5,
     shift_lambda = .5,
-    senseinventoryname = 'en_jbtsense_stanfordNew_finer'
+    senseinventoryname = 'en_jbtsense__stanfordNew_finer'
   )
 
   .INITIALIZED <- F

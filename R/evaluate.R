@@ -67,7 +67,7 @@ with(evaluate, {
     }, valuenames = c('max_sim', 'avgscore'))
   )
 
-  .generate_evaluations <- function() {
+  .generate_evaluations <- function(all_matches=F) {
     d <- .datasets()
     dn <- lapply(seq_len(nrow(d)), function(i){
       di <- d[i, ]
@@ -79,7 +79,7 @@ with(evaluate, {
       sinventories <- inventory$.modelnames_for_lang(di$lang)
       # get the first element of each inventory type if it exists
       sinventoriesfiltered <- c(
-        tryCatch(grep('_jbtsense_', sinventories, value = T)[[1]], error = function(e) c())
+        tryCatch({matches<-grep('_jbtsense_', sinventories, value = T); if (all_matches) matches else matches[[1]];}, error = function(e) { util$message(e); c() })
       )
       # use only inventories where the model is based on the found vsmodelname
       vsmodelavailable <- vsm$.models_available()[[vsmodelname]]
@@ -87,8 +87,8 @@ with(evaluate, {
       # add the jbtsim and vsmsim type inventory
       sinventoriesfiltered <- c(
         sinventoriesfiltered,
-        tryCatch(grep('_jbtsim_', sinventories, value = T)[[1]], error = function(e) c()),
-        tryCatch(grep('_vsmsim_', sinventories, value = T)[[1]], error = function(e) c())
+        tryCatch({matches<-grep('_jbtsim_', sinventories, value = T); if (all_matches) matches else matches[[1]]}, error = function(e) c()),
+        tryCatch({matches<-grep('_vsmsim_', sinventories, value = T); if (all_matches) matches else matches[[1]]}, error = function(e) c())
       )
       # add all senseinventory related information to the data table
       di$vsmodelname <- vsmodelname
@@ -201,9 +201,9 @@ with(evaluate, {
 
   #' @param dsetfilterfun NULL or filterfunction
   #' @test e.g. eval only de datasets with runeval(par = NULL, evalfilter = function(dset) dset$lang == 'en'))
-  .run.eval <- function(par = NULL, evalfilter = function(e) T) {
+  .run.eval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F) {
     .init()
-    evaluations <- .generate_evaluations()
+    evaluations <- .generate_evaluations(!only_best_inventory)
     evalind <- seq_len(nrow(evaluations))
     if(!is.null(evalfilter))
       evalind <- Filter(function(i) evalfilter(evaluations[i,]), evalind)

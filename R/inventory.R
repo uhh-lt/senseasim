@@ -21,19 +21,12 @@ with(inventory, {
     # manually define some inventories
     list(
       #
-      en_jbtsense_stanfordNew_finer = list(
+      man_jbtsense_stanfordNew_finer = list(
         lang = 'en',
         senses = function(term, POS) jbt$models[['en_jbt_stanfordNew']]()$senses(term, POS, finer = T, isas = F)
       ),
       #
-      en_jbtsense_stanfordNew = list(
-        lang = 'en',
-        senses = function(term, POS) jbt$models[['en_jbt_stanfordNew']]()$senses(term, POS, finer = F, isas = F)
-      ),
-      #
-      #
-      #
-      cluster__glove_6B_50d__sim500cluster_cw = list(
+      man_cluster__glove_6B_50d__sim500cluster_cw = list(
         lang = 'en',
         senses = function(term, POS = NA)
           wsi$induceby.simcluster.vsm(
@@ -49,7 +42,7 @@ with(inventory, {
             cluster.fun.name = 'cw_nosingletons')$itemlists
       ),
       #
-      cluster__EN_100k_lsa__sim500cluster_cw = list(
+      man_cluster__EN_100k_lsa__sim500cluster_cw = list(
         lang = 'en',
         senses = function(term, POS = NA)
           wsi$induceby.simcluster.vsm(
@@ -65,9 +58,7 @@ with(inventory, {
             cluster.fun.name = 'cw_nosingletons')$itemlists
       ),
       #
-      #
-      #
-      dummy = list(
+      man_dummy = list(
         lang = 'en',
         senses = function(word, POS = NA) list(list(word))
       )
