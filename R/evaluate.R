@@ -79,7 +79,7 @@ with(evaluate, {
       sinventories <- inventory$.modelnames_for_lang(di$lang)
       # get the first element of each inventory type if it exists
       sinventoriesfiltered <- c(
-        tryCatch({matches<-grep('_jbtsense_', sinventories, value = T); if (all_matches) matches else matches[[1]];}, error = function(e) { util$message(e); c() })
+        tryCatch({matches<-grep('_jbtsense_', sinventories, value = T); if (all_matches) matches else matches[[1]];}, error = function(e) c())
       )
       # use only inventories where the model is based on the found vsmodelname
       vsmodelavailable <- vsm$.models_available()[[vsmodelname]]
@@ -226,10 +226,10 @@ with(evaluate, {
     return(results)
   }
 
-  .try.run.eval <- function(par = NULL, evalfilter = function(e) T) {
+  .try.run.eval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F) {
     tryCatch(
       expr = {
-        r <- .run.eval(par, evalfilter)
+        r <- .run.eval(par, evalfilter, only_best_inventory)
         util$sendmessage(subject = util$as.messagestring('Computation Finished! <EOM>'))
         return(r)
       },
