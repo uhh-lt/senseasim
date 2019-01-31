@@ -31,7 +31,7 @@ with(inventory, {
         senses = function(term, POS = NA)
           wsi$induceby.simcluster.vsm(
             term,
-            vsmodel = vsm$models[['en_glove_6B_50d']](),
+            vsmodel = 'en_glove_6B_50d',
             topn.similar.terms = 500,
             simfun = senseasim$cos,
             simfun.name = 'cos',
@@ -47,7 +47,7 @@ with(inventory, {
         senses = function(term, POS = NA)
           wsi$induceby.simcluster.vsm(
             term,
-            vsmodel = vsm$models[['en_100k_lsa']](),
+            vsmodel = 'en_100k_lsa',
             topn.similar.terms = 500,
             simfun = senseasim$cos,
             simfun.name = 'cos',
@@ -107,7 +107,7 @@ with(inventory, {
       # for each vsm model and jbt model in the same language generate an inventory
       vsmmodelsforlang <- vsm$.modelnames_for_lang(jbtmodel$lang)
       inventories_for_jbtsim <- lapply(vsmmodelsforlang, function(vsmodelname) {
-
+        vsmbasename <- vsmodels_available[[vsmodelname]]$basename
         # senses by clustering jbt similar terms
         newmodel_mcl1 <- list(
           lang = jbtmodel$lang,
@@ -178,10 +178,10 @@ with(inventory, {
         )
 
         modelsaslist <- list()
-        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim400cluster_mcl_t0.8')]] <- newmodel_mcl1
-        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim400cluster_mcl_tmean')]] <- newmodel_mcl2
-        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim400cluster_cw_t0.8')]] <- newmodel_cw1
-        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmodelname}__sim400cluster_cw_tmean')]] <- newmodel_cw2
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_mcl_t0.8')]] <- newmodel_mcl1
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_mcl_tmean')]] <- newmodel_mcl2
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_t0.8')]] <- newmodel_cw1
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_tmean')]] <- newmodel_cw2
 
         return(modelsaslist)
       })

@@ -26,6 +26,7 @@ with(evaluate, {
   }
 
   .scorefuns <- list(
+    #
     rand = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
       rand <- runif(1)
       r_full <- list(
@@ -44,14 +45,16 @@ with(evaluate, {
         concise = r_concise,
         full    = r_full
       ))
-    }, valuenames = c('rand')),
+    }, valuenames = c('rand'), depends=c(vsm=F, inventory=F)),
+    #
     standardcos = list(fun=function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2){
       sim <- vsm$models[[vsmodelname]]()$sim(w1, w2)
       return(list(
         concise = sim,
         full    = sim
       ))
-    }, valuenames = c('sim')),
+    }, valuenames = c('sim'), depends=c(vsm=T, inventory=F)),
+    #
     sensasim = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
       r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5)
       r_concise <- r_full$maxscore
@@ -64,7 +67,21 @@ with(evaluate, {
         concise = r_concise,
         full    = r_full
       ))
-    }, valuenames = c('max_sim', 'avgscore'))
+    }, valuenames = c('max_sim', 'avgscore'), depends=c(vsm=T, inventory=T)),
+    #
+    sensasim = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
+      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5)
+      r_concise <- r_full$maxscore
+      r_concise$t1.nsenses <- r_full$t1_info$nsenses
+      r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
+      r_concise$t2.nsenses <- r_full$t2_info$nsenses
+      r_concise$t2.is.unk <- r_full$t2_info$index[1,]$unknown
+      r_concise$avgscore <- r_full$avgscore
+      return(list(
+        concise = r_concise,
+        full    = r_full
+      ))
+    }, valuenames = c('max_sim', 'avgscore'), depends=c(vsm=T, inventory=T))
   )
 
   .generate_evaluations <- function(all_matches=F) {
@@ -240,7 +257,6 @@ with(evaluate, {
     )
   }
 
-
   .get.results <- function(results){
     #
     if(is.data.frame(results)){
@@ -271,6 +287,7 @@ with(evaluate, {
       subdata <- subdata[!is.na(get(scorecolumn)), ] # remove NAs
       merged <- merge(merged, subdata, by='eid')
     }
+    merged <- merged[,-c('scorefun'), with=F]
     return(merged)
   }
 
