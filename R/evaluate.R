@@ -184,6 +184,7 @@ with(evaluate, {
       return(eis)
     })
     en <- data.table::rbindlist(en, use.names=T, fill=T)
+    en$eid <- seq_len(nrow(en))
     return(en)
   }
 
