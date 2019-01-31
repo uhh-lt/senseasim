@@ -105,6 +105,7 @@ with(inventory, {
         inventories_for_jbtmodel[[newjbtinventoryname]] <- newjbtinventory
       }
       # for each vsm model and jbt model in the same language generate an inventory
+      vsmodels_available = vsm$.models_available()
       vsmmodelsforlang <- vsm$.modelnames_for_lang(jbtmodel$lang)
       inventories_for_jbtsim <- lapply(vsmmodelsforlang, function(vsmodelname) {
         vsmbasename <- vsmodels_available[[vsmodelname]]$basename
