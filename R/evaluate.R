@@ -320,8 +320,8 @@ with(evaluate, {
     )
   }
 
-  .try.run.fteval <- function(par = NULL, evalfilter = function(e) F, only_best_inventory=F){
-    ftfilter < function(e) is.na(e$vsmodel) || grep('_ft_cc_', e$vsmodel) || evalfilter(e)
+  .try.run.fteval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F){
+    ftfilter < function(e) (is.na(e$vsmodel) || grep('_ft_cc_', e$vsmodel)) && evalfilter(e)
     evaluate$.try.run.eval(pat, ftfilter, only_best_inventory)
   }
 
