@@ -25,7 +25,7 @@ with(evaluate, {
     return(dt)
   }
 
-  .scorefuns <- list(
+  .scorefuns <-  { list(
     #
     rand = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
       rand <- runif(1)
@@ -45,7 +45,7 @@ with(evaluate, {
         concise = r_concise,
         full    = r_full
       ))
-    }, valuenames = c('rand'), depends=c(vsm=F, inventory=F)),
+    }, valuenames = c('rand'), depends=list(vsm=F, inventory=F)),
     #
     standardcos = list(fun=function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2){
       sim <- vsm$models[[vsmodelname]]()$sim(w1, w2)
@@ -53,9 +53,9 @@ with(evaluate, {
         concise = sim,
         full    = sim
       ))
-    }, valuenames = c('sim'), depends=c(vsm=T, inventory=F)),
+    }, valuenames = c('sim'), depends=list(vsm=T, inventory=F)),
     #
-    sensasim = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
+    sensasim_t5_l0.5 = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
       r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5)
       r_concise <- r_full$maxscore
       r_concise$t1.nsenses <- r_full$t1_info$nsenses
@@ -67,10 +67,10 @@ with(evaluate, {
         concise = r_concise,
         full    = r_full
       ))
-    }, valuenames = c('max_sim', 'avgscore'), depends=c(vsm=T, inventory=T)),
+    }, valuenames = c('max_sim', 'avgscore'), depends=list(vsm=T, inventory=T)),
     #
-    sensasim = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
-      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5)
+    sensasim_t500_l0 = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
+      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 500, shift_lambda = 0)
       r_concise <- r_full$maxscore
       r_concise$t1.nsenses <- r_full$t1_info$nsenses
       r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
@@ -81,10 +81,10 @@ with(evaluate, {
         concise = r_concise,
         full    = r_full
       ))
-    }, valuenames = c('max_sim', 'avgscore'), depends=c(vsm=T, inventory=T))
-  )
+    }, valuenames = c('max_sim', 'avgscore'), depends=list(vsm=T, inventory=T))
+  ) }
 
-  .generate_evaluations <- function(all_matches=F) {
+  .generate_evaluations_old <- function(all_matches=F) {
     d <- .datasets()
     dn <- lapply(seq_len(nrow(d)), function(i){
       di <- d[i, ]
@@ -124,6 +124,69 @@ with(evaluate, {
     return(dn)
   }
 
+  .generate_evaluations <- function(all_matches=T) {
+    vsmodels_available <- vsm$.models_available()
+    d <- .datasets()
+    en <- lapply(seq_len(nrow(d)), function(i) {
+      di <- d[i, ]
+      eis <- lapply(names(.scorefuns), function(scorefunname) {
+        if(!.scorefuns[[scorefunname]]$depends$vsm){
+          # generate row
+          e <- di
+          e$scorefun <- scorefunname
+          e$outfile <- paste0(di$filename, '-scored-', e$scorefun)
+          return(e)
+        } else {
+          # get the vector space models for lang
+          vsmodelnames <- vsm$.modelnames_for_lang(di$lang)
+          eiv <- lapply(vsmodelnames, function(vsmodelname) {
+            vsmodelbasename <- vsmodels_available[[vsmodelname]]$basename
+            if(!.scorefuns[[scorefunname]]$depends$inventory){
+              # generate row
+              e <- di
+              e$scorefun <- scorefunname
+              e$vsmodel <- vsmodelname
+              e$outfile <- paste0(e$filename, '-scored-', e$scorefun, '__', e$vsmodel)
+              return(e)
+            } else {
+              # get all sense inventories for lang
+              sinventories <- inventory$.modelnames_for_lang(di$lang)
+              # get the first element of each inventory type if it exists
+              sinventoriesfiltered <- c(
+                tryCatch({matches<-grep('_jbtsense_', sinventories, value = T); if (all_matches) matches else matches[[1]];}, error = function(e) c())
+              )
+              # use only inventories where the model is based on the found vsmodelname
+              sinventories <- grep(paste0('_',vsmodelbasename,'_'), sinventories, value = T)
+              # add the jbtsim and vsmsim type inventory
+              sinventoriesfiltered <- c(
+                sinventoriesfiltered,
+                tryCatch({matches<-grep('_jbtsim_', sinventories, value = T); if (all_matches) matches else matches[[1]]}, error = function(e) c()),
+                tryCatch({matches<-grep('_vsmsim_', sinventories, value = T); if (all_matches) matches else matches[[1]]}, error = function(e) c())
+              )
+              eii <- lapply(sinventoriesfiltered, function(sinventory) {
+                # generate row
+                e <- di
+                e$scorefun <- scorefunname
+                e$vsmodel <- vsmodelname
+                e$inventory <- sinventory
+                e$outfile <- paste0(e$filename, '-scored-', e$scorefun, '__', e$vsmodel, '__', e$inventory)
+                return(e)
+              })
+              eii <- data.table::rbindlist(eii, use.names=T, fill=T)
+              return(eii)
+            }
+          })
+          eiv <- data.table::rbindlist(eiv, use.names=T, fill=T)
+          return(eiv)
+        }
+      })
+      eis <- data.table::rbindlist(eis, use.names=T, fill=T)
+      return(eis)
+    })
+    en <- data.table::rbindlist(en, use.names=T, fill=T)
+    return(en)
+  }
+
   .evaluate.row <- function(evalrow, evali=1, evaln=1, par=NULL){
     evaluation_ <- evalrow[,-'loaddata', with=F]
     util$message(sprintf('Current eval: [%d/%d] \n%s', evali, evaln,  paste0('\t', colnames(evaluation_), ': ', evaluation_, collapse = '\n')))
@@ -131,8 +194,7 @@ with(evaluate, {
     dataset <- evalrow$loaddata[[1]]()
 
     # for each evalconfig
-    outfile <- paste0(evalrow$filename, '-scored-', evalrow$vsmodelname, '__', evalrow$senseinventory, '__', evalrow$scorefun)
-    res <- .evaluate(dataset, evalrow$vsmodelname, evalrow$senseinventory, evalrow$scorefun, par, outfile)
+    res <- .evaluate(dataset, evalrow$scorefun, evalrow$vsmodel, evalrow$inventory, evalrow$outfile, par)
     # result is a list of datapoint scores and correlation scores
 
     # combine result with evaluation row
@@ -147,7 +209,7 @@ with(evaluate, {
     return(evaluation_result)
   }
 
-  .evaluate <- function(dataset, vsmodelname, senseinventoryname, scorefunname = names(.scorefuns)[[1]], par, outfile) {
+  .evaluate <- function(dataset, scorefunname, vsmodelname, senseinventoryname, outfile, par) {
     if(file.exists(paste0(outfile, '.tsv'))){
       scoredt <- data.table::fread(paste0(outfile, '.tsv'), sep='\t', header=T, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=T, quote="")
     }
@@ -311,4 +373,6 @@ with(evaluate, {
   }
 
 })
+
+
 
