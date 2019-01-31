@@ -322,7 +322,7 @@ with(evaluate, {
 
   .try.run.fteval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F){
     ftfilter <- function(e) (is.na(e$vsmodel) || grep('_ft_cc_', e$vsmodel)) && evalfilter(e)
-    .try.run.eval(pat, ftfilter, only_best_inventory)
+    .try.run.eval(par, ftfilter, only_best_inventory)
   }
 
   .get.results <- function(results){
