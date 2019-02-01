@@ -309,7 +309,7 @@ with(evaluate, {
     return(results)
   }
 
-  .try.run.eval <- function(par = NULL, evaluations, evalfilter = function(e) T, only_best_inventory=F) {
+  .try.run.eval <- function(par = NULL, evaluations=NULL, evalfilter = function(e) T, only_best_inventory=F) {
     tryCatch(
       expr = {
         r <- .run.eval(par, evaluations, evalfilter, only_best_inventory)
