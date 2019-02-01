@@ -281,7 +281,7 @@ with(evaluate, {
 
   #' @param dsetfilterfun NULL or filterfunction
   #' @test e.g. eval only de datasets with runeval(par = NULL, evalfilter = function(dset) dset$lang == 'en'))
-  .run.eval <- function(par = NULL, evaluations = NULL, evalfilter = function(e) T, only_best_inventory=F) {
+  .run.eval <- function(par = NULL, evaluations = NULL, evalfilter = NULL, only_best_inventory=F) {
     .init()
 
     if(is.null(evaluations))
@@ -385,7 +385,7 @@ with(evaluate, {
 
 # e <- evaluate$.generate_evaluations(all_matches = T)
 # ef <- e[(lang == 'en' | lang == 'de') & type=='mc' & (is.na(vsmodel) | grepl('_ft_cc_', vsmodel) | grepl('_ft_simplewiki_', vsmodel)),]
-# .run.eval(par=3, ef)
+# evaluate$.run.eval(par=3, ef)
 
 
 
