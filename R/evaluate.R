@@ -281,9 +281,12 @@ with(evaluate, {
 
   #' @param dsetfilterfun NULL or filterfunction
   #' @test e.g. eval only de datasets with runeval(par = NULL, evalfilter = function(dset) dset$lang == 'en'))
-  .run.eval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F) {
+  .run.eval <- function(par = NULL, evaluations = NULL, evalfilter = function(e) T, only_best_inventory=F) {
     .init()
-    evaluations <- .generate_evaluations(!only_best_inventory)
+
+    if(is.null(evaluations))
+      evaluations <- .generate_evaluations(!only_best_inventory)
+
     evalind <- seq_len(nrow(evaluations))
     if(!is.null(evalfilter))
       evalind <- Filter(function(i) evalfilter(evaluations[i,]), evalind)
@@ -306,10 +309,10 @@ with(evaluate, {
     return(results)
   }
 
-  .try.run.eval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F) {
+  .try.run.eval <- function(par = NULL, evaluations, evalfilter = function(e) T, only_best_inventory=F) {
     tryCatch(
       expr = {
-        r <- .run.eval(par, evalfilter, only_best_inventory)
+        r <- .run.eval(par, evaluations, evalfilter, only_best_inventory)
         util$sendmessage(subject = util$as.messagestring('Computation Finished! <EOM>'))
         return(r)
       },
@@ -322,7 +325,7 @@ with(evaluate, {
 
   .try.run.fteval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F){
     ftfilter <- function(e) (is.na(e$vsmodel) || grep('_ft_cc_', e$vsmodel)) && evalfilter(e)
-    .try.run.eval(par, ftfilter, only_best_inventory)
+    .try.run.eval(par, NULL, ftfilter, only_best_inventory)
   }
 
   .get.results <- function(results){
@@ -379,6 +382,10 @@ with(evaluate, {
   }
 
 })
+
+# e <- evaluate$.generate_evaluations(all_matches = T)
+# ef <- e[(lang == 'en' | lang == 'de') & type=='mc' & (is.na(vsmodel) | grepl('_ft_cc_', vsmodel) | grepl('_ft_simplewiki_', vsmodel)),]
+# .run.eval(par=3, ef)
 
 
 
