@@ -18,6 +18,10 @@ with(senseasim, {
       inventory$.init(reinitialize)
       sensevectors$.init(reinitialize)
     }
+    util$message('Available Models:')
+    util$message(sprintf('  %d Vector space models', length(vsm$models)))
+    util$message(sprintf('  %d JoBimText models', length(jbt$models)))
+    util$message(sprintf('  %d Sense inventory models', length(inventory$models)))
   }
 
   #'

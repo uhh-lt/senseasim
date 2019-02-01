@@ -78,6 +78,66 @@ with(clust, {
     return(labels)
   }
 
+  #'
+  #' prune graph / adjaceny matrix
+  #'
+  graph.prune <- function(A, nkeep=3) {
+    colidx <- as.vector(apply(A, 1, function(x) order(x, decreasing=T)[1:nkeep]))
+    rowidx <- rep(seq_len(nrow(A)), each=nkeep)
+    B<-matrix(0, nrow=nrow(A), ncol=ncol(A))
+    B[cbind(rowidx, colidx)] <- A[cbind(rowidx, colidx)]
+    return(B)
+  }
+
+  #'
+  #' visualize graph / adjaceny matrix
+  #'
+  graph.viz <- function(A, labels=NULL, labels.as.list=T, label.as.name=F, tkplot=F) {
+    # make proper adjacency matrix
+    A[A>0] <- 1; A[A<0] <- 0
+    net <- igraph::graph_from_adjacency_matrix(A, mode = 'undirected')
+    igraph::V(net)$color <- 'lightgray'
+    if(!is.null(labels)){
+      if(labels.as.list){
+        labels <- as.cluster.labels(labels)
+      }
+
+      labelfactor <- factor(labels)
+      labelfactorid <- as.numeric(labelfactor)
+
+      # vertex properties
+      igraph::V(net)$frame.color = 'black'
+      igraph::V(net)$color <- c('lightgray', 'yellow', 'magenta', 'red', 'green', 'white', 'cyan', 'lightblue')[labelfactorid %% 8]
+      igraph::V(net)$shape <- c('circle', 'square', 'csquare', 'rectangle', 'crectangle', 'vrectangle', 'pie', 'raster', 'sphere', 'none')[(labelfactorid %/% 8 + 1) %% 10]
+      #igraph::V(net)$size <- 14
+
+      # vertex labels and label properties
+      igraph::V(net)$label <- if(label.as.name) paste(rownames(A), labels, sep='##') else rownames(A)
+      igraph::V(net)$label.color <- c('black', 'white')[(labelfactorid %/% 80 + 1) %% 2]
+      # igraph::V(net)$label.font <- 1   # Font: 1 plain, 2 bold, 3, italic, 4 bold italic, 5 symbol
+      # igraph::V(net)$label.cex <- 1  # Font size (multiplication factor, device-dependent)
+      # igraph::V(net)$label.dist <- 0 # Distance between the label and the vertex
+      # igraph::V(net)$label.degree <- 0  # The position of the label in relation to the vertex (use pi)
+      # igraph::V(net)$label.family <- 'Times'  # Font family of the label (e.g. 'Times', 'Helvetica')
+
+      # edge properties
+      igraph::E(net)$color <- 'gray'
+      igraph::E(net)$lty <- 'solid'   # Line type, could be 0 or “blank”, 1 or “solid”, 2 or “dashed”, 3 or “dotted”, 4 or “dotdash”, 5 or “longdash”, 6 or “twodash”
+      igraph::E(net)$curved <- 0.3 # Edge curvature, range 0-1 (FALSE sets it to 0, TRUE to 0.5)
+      igraph::E(net)$width <- 2
+
+    }
+
+    if(tkplot){
+      tkid <- tkplot(net)
+    }else{
+      p <- igraph::plot.igraph(net)
+    }
+
+
+    return(A)
+  }
+
   # Clustering algorithms ----
 
   #' Chinese Whispers
