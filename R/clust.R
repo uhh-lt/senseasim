@@ -85,6 +85,7 @@ with(clust, {
     colidx <- as.vector(apply(A, 1, function(x) order(x, decreasing=T)[1:nkeep]))
     rowidx <- rep(seq_len(nrow(A)), each=nkeep)
     B<-matrix(0, nrow=nrow(A), ncol=ncol(A))
+    rownames(B) <- rownames(A); colnames(B) <- colnames(A)
     B[cbind(rowidx, colidx)] <- A[cbind(rowidx, colidx)]
     return(B)
   }
@@ -129,13 +130,12 @@ with(clust, {
     }
 
     if(tkplot){
-      tkid <- tkplot(net)
+      tkid <- igraph::tkplot(net)
     }else{
       p <- igraph::plot.igraph(net)
     }
 
-
-    return(A)
+    return(list(A=A, labels=labels))
   }
 
   # Clustering algorithms ----

@@ -17,7 +17,7 @@ with(wsi, {
     if(is.character(vsmodel))
       vsmodelname <- vsmodel
     else
-      vsmodelname <- vsmodel()$name
+      vsmodelname <- vsmodel$name
 
     util$message(sprintf('Preparing similarity values for term \'%s\' and matrix \'%s\'. ', term_or_idx, vsmodelname))
 
@@ -57,7 +57,7 @@ with(wsi, {
     if(is.character(vsmodel))
       vsmodelname <- vsmodel
     else
-      vsmodelname <- vsmodel()$name
+      vsmodelname <- vsmodel$name
 
     n <- min(n, if (is.array(terms) || is.data.frame(terms)) nrow(terms) else length(terms))
     terms <- terms[1:n]
@@ -100,7 +100,7 @@ with(wsi, {
     if(is.character(vsmodel))
       vsmodelname <- vsmodel
     else
-      vsmodelname <- vsmodel()$name
+      vsmodelname <- vsmodel$name
 
     util$message(sprintf('Preparing similarity graph of top %s most similar terms for term \'%s\' and matrix \'%s\' and expand by the top %s most similar terms.', n, term, vsmodelname, m))
     fname <- cache$get_filename(term, '', dirname = cache$data_temp_dir(), prefix = paste0('simgraphtrans__', vsmodelname, '__', simfun.name,  '__n', n, '__m', m, '__'))
@@ -149,7 +149,7 @@ with(wsi, {
     if(is.character(vsmodel))
       vsmodelname <- vsmodel
     else
-      vsmodelname <- vsmodel()$name
+      vsmodelname <- vsmodel$name
 
     fname <- cache$get_filename(term, POS, dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterjbt__', jbtmodel$name, '__', vsmodelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
@@ -184,7 +184,7 @@ with(wsi, {
     if(is.character(vsmodel))
       vsmodelname <- vsmodel
     else
-      vsmodelname <- vsmodel()$name
+      vsmodelname <- vsmodel$name
 
     fname <- cache$get_filename(term, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclustervsm__', vsmodelname, '__', simfun.name,  '__n', topn.similar.terms, '__', thresh, '__', cluster.fun.name, '__'))
     result <- cache$load(filename = fname, computefun = function() {
@@ -208,7 +208,7 @@ with(wsi, {
     if(is.character(vsmodel))
       vsmodelname <- vsmodel
     else
-      vsmodelname <- vsmodel()$name
+      vsmodelname <- vsmodel$name
 
     desc <- digest::digest(terms)
     fname <- cache$get_filename(desc, '', dirname = cache$data_temp_dir(), prefix = paste0('inducedbysimclusterterms__', vsmodelname, '__', simfun.name, '__', thresh, '__', cluster.fun.name, '__'))

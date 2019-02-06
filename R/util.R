@@ -6,6 +6,8 @@ util <- new.env(parent = .GlobalEnv)
 
 with(util, {
 
+  randstring <- function(n=8) paste0(sample(c(0:9, letters, LETTERS), n, replace = T), collapse='')
+
   message <- function(content) base::message(as.messagestring(content))
 
   as.messagestring <- function(content) sprintf(

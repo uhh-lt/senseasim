@@ -385,7 +385,7 @@ with(evaluate, {
 
 # e <- evaluate$.generate_evaluations(all_matches = T)
 # ef <- e[(lang == 'en' | lang == 'de') & type=='mc' & (is.na(vsmodel) | grepl('_ft_cc_', vsmodel) | grepl('_ft_simplewiki_', vsmodel)),]
-# evaluate$.run.eval(par=3, ef)
+# evaluate$.run.eval(par=1, ef)
 
 
 
