@@ -94,9 +94,15 @@ with(clust, {
   #' visualize graph / adjaceny matrix
   #'
   graph.viz <- function(A, labels=NULL, labels.as.list=T, label.as.name=F, tkplot=F) {
-    # make proper adjacency matrix
-    A[A>0] <- 1; A[A<0] <- 0
-    net <- igraph::graph_from_adjacency_matrix(A, mode = 'undirected')
+    # ensure that weights are between 0 and 1
+    miA <- min(A)
+    if(miA < 0)
+      A <- A - miA
+    maA <- max(A)
+    if(maA > 1)
+      A <- A / maA
+    # produce undirected weighted graph
+    net <- igraph::graph_from_adjacency_matrix(A, mode = 'undirected', weighted = T)
     igraph::V(net)$color <- 'lightgray'
     if(!is.null(labels)){
       if(labels.as.list){

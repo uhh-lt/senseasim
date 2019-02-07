@@ -271,7 +271,7 @@ with(inventory, {
     return(models)
   }
 
-  .get <- function(inventoryname, inventories = .inventories_available()) {
+  .get <- function(inventoryname, inventories = .models_available()) {
     if(!(inventoryname %in% names(.inventories_loaded))){
       loadedinventory <- inventories[[inventoryname]]
       loadedinventory$name <- inventoryname
@@ -282,7 +282,7 @@ with(inventory, {
     return(.inventories_loaded[[inventoryname]])
   }
 
-  .get_models <- function(lazyloading = T, inventories = .inventories_available()) {
+  .get_models <- function(lazyloading = T, inventories = .models_available()) {
     models <- sapply(names(inventories), function(inventoryname) {
       if(!lazyloading)
         model <- .get(inventoryname, inventories)
