@@ -178,7 +178,7 @@ with(wsi, {
   }
 
   induceby.simcluster.jbt.debug <- function(term, POS, jbtmodel, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons', tkplot=F){
-    cfun <- function(X) { l<-cluster.fun(X); clust$graph.viz(A, l, labels.as.list=F, tkplot=tkplot); l }
+    cfun <- function(X) { l<-cluster.fun(X); clust$graph.viz(X, l, labels.as.list=F, tkplot=tkplot); l }
     cfunname <- paste0(cluster.fun.name,'_clustertest_', util$randstring())
     result <- wsi$induceby.simcluster.jbt(term=term, POS=POS, jbtmodel=jbtmodel ,vsmodel=vsmodel, cluster.fun=cfun, cluster.fun.name=cfunname)
     return(result)
@@ -208,7 +208,7 @@ with(wsi, {
   }
 
   induceby.simcluster.vsm.debug <- function(term, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons', tkplot=F){
-    cfun <- function(X) { l<-cluster.fun(X); clust$graph.viz(A, l, labels.as.list=F, tkplot=tkplot); l }
+    cfun <- function(X) { l<-cluster.fun(X); clust$graph.viz(X, l, labels.as.list=F, tkplot=tkplot); l }
     cfunname <- paste0(cluster.fun.name,'_clustertest_', util$randstring())
     result <- wsi$induceby.simcluster.vsm(term=term, vsmodel=vsmodel, topn.similar.terms=topn.similar.terms, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cfun, cluster.fun.name=cfunname)
     return(result)
@@ -236,7 +236,7 @@ with(wsi, {
       SIM[which(SIM < thresh)] <- 0
       labels <- cluster.fun(SIM)
       aslists <- clust$as.cluster.lists(labels)
-      result <- list(labels = labels, itemlists = aslists)
+      result <- list(labels = labels, itemlists = aslists, m = SIM)
       return(result)
     })
     if(is.numeric(minsize) & minsize > 1){

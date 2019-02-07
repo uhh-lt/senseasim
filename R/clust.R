@@ -82,9 +82,22 @@ with(clust, {
   #' prune graph / adjaceny matrix
   #'
   graph.prune <- function(A, nkeep=3) {
-    colidx <- as.vector(apply(A, 1, function(x) order(x, decreasing=T)[1:nkeep]))
-    rowidx <- rep(seq_len(nrow(A)), each=nkeep)
-    B<-matrix(0, nrow=nrow(A), ncol=ncol(A))
+    # first make sure that selfloops are removed
+    # assert ncol(A) == nrow(A)
+    diag(A) <- 0
+    idx <- seq_len(nrow(A))
+    maxidx <- sapply(idx, function(i){
+      # throw in some randomness (just in case the matrix is too homogenous)
+      sampledcolidx <- sample(seq_len(ncol(A)))
+      sampledrowidx <- sample(seq_len(nrow(A)))
+      c(
+        sampledcolidx[order(A[i, sampledcolidx], decreasing=T)[1:nkeep]],
+        sampledcolidx[order(A[sampledrowidx, i], decreasing=T)[1:nkeep]]
+      )
+    })
+    rowidx <- c(rep(idx, each=nkeep), c(maxidx[1:nkeep,]))
+    colidx <- c(c(maxidx[(nkeep+1):(nkeep*2),]), rep(idx, each=nkeep))
+    B <- matrix(0, nrow=nrow(A), ncol=ncol(A))
     rownames(B) <- rownames(A); colnames(B) <- colnames(A)
     B[cbind(rowidx, colidx)] <- A[cbind(rowidx, colidx)]
     return(B)
@@ -93,13 +106,13 @@ with(clust, {
   #'
   #' visualize graph / adjaceny matrix
   #'
-  graph.viz <- function(A, labels=NULL, labels.as.list=T, label.as.name=F, tkplot=F) {
+  graph.viz <- function(A, labels=NULL, labels.as.list=T, label.in.name=F, tkplot=F) {
     # ensure that weights are between 0 and 1
     miA <- min(A)
-    if(miA < 0)
+    if(miA < 0) # shift if needed
       A <- A - miA
     maA <- max(A)
-    if(maA > 1)
+    if(maA > 1)  # scale if needed
       A <- A / maA
     # produce undirected weighted graph
     net <- igraph::graph_from_adjacency_matrix(A, mode = 'undirected', weighted = T)
@@ -113,14 +126,14 @@ with(clust, {
       labelfactorid <- as.numeric(labelfactor)
 
       # vertex properties
-      igraph::V(net)$frame.color = 'black'
-      igraph::V(net)$color <- c('lightgray', 'yellow', 'magenta', 'red', 'green', 'white', 'cyan', 'lightblue')[labelfactorid %% 8]
-      igraph::V(net)$shape <- c('circle', 'square', 'csquare', 'rectangle', 'crectangle', 'vrectangle', 'pie', 'raster', 'sphere', 'none')[(labelfactorid %/% 8 + 1) %% 10]
+      igraph::V(net)$color <- c('lightgray', 'yellow', 'magenta', 'red', 'green', 'white', 'cyan', 'lightblue')[(labelfactorid %% 8)+1]
+      igraph::V(net)$shape <- c('circle', 'square')[((labelfactorid %/% 8) %% 2)+1] # 'csquare', 'rectangle', 'crectangle', 'vrectangle', 'pie', 'raster', 'sphere', 'none'
+      igraph::V(net)$frame.color <- c('black', 'red', 'green', 'blue', 'yellow', 'white')[((labelfactorid %/% 16) %% 6)+1]
       #igraph::V(net)$size <- 14
 
       # vertex labels and label properties
-      igraph::V(net)$label <- if(label.as.name) paste(rownames(A), labels, sep='##') else rownames(A)
-      igraph::V(net)$label.color <- c('black', 'white')[(labelfactorid %/% 80 + 1) %% 2]
+      igraph::V(net)$label <- if(label.in.name) paste(rownames(A), labels, sep='##') else rownames(A)
+      igraph::V(net)$label.color <- c('black', 'red', 'green', 'blue', 'white')[((labelfactorid %/% 256) %% 5)+1]
       # igraph::V(net)$label.font <- 1   # Font: 1 plain, 2 bold, 3, italic, 4 bold italic, 5 symbol
       # igraph::V(net)$label.cex <- 1  # Font size (multiplication factor, device-dependent)
       # igraph::V(net)$label.dist <- 0 # Distance between the label and the vertex
@@ -131,7 +144,7 @@ with(clust, {
       igraph::E(net)$color <- 'gray'
       igraph::E(net)$lty <- 'solid'   # Line type, could be 0 or “blank”, 1 or “solid”, 2 or “dashed”, 3 or “dotted”, 4 or “dotdash”, 5 or “longdash”, 6 or “twodash”
       igraph::E(net)$curved <- 0.3 # Edge curvature, range 0-1 (FALSE sets it to 0, TRUE to 0.5)
-      igraph::E(net)$width <- 2
+      igraph::E(net)$width <- igraph::E(net)$weight
 
     }
 
