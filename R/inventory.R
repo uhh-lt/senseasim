@@ -141,7 +141,7 @@ with(inventory, {
             thresh = 'mean',
             minsize = 3,
             cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'cw400_tmean_nosingletons_noloops')$itemlists
+            cluster.fun.name = 'mcl400_tmean_nosingletons_noloops')$itemlists
         )
 
         newmodel_mcl3 <- list(
@@ -158,7 +158,7 @@ with(inventory, {
             thresh = 'prune.sym.n10',
             minsize = 3,
             cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'cw400_tprune.sym.n10_nosingletons_noloops')$itemlists
+            cluster.fun.name = 'mcl400_tprune.sym.n10_nosingletons_noloops')$itemlists
         )
 
         newmodel_cw1 <- list(
