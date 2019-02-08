@@ -124,7 +124,7 @@ with(inventory, {
             thresh = 0.8,
             minsize = 3,
             cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'mcl400_t0.8_nosingletons_noloops')$itemlists
+            cluster.fun.name = 'mcl_400_t0.8_nosingletons_noloops')$itemlists
         )
 
         newmodel_mcl2 <- list(
@@ -141,7 +141,7 @@ with(inventory, {
             thresh = 'mean',
             minsize = 3,
             cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'mcl400_tmean_nosingletons_noloops')$itemlists
+            cluster.fun.name = 'mcl_400_tmean_nosingletons_noloops')$itemlists
         )
 
         newmodel_mcl3 <- list(
@@ -158,7 +158,7 @@ with(inventory, {
             thresh = 'prune.sym.n10',
             minsize = 3,
             cluster.fun = function(X) { clust$mcl(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'mcl400_tprune.sym.n10_nosingletons_noloops')$itemlists
+            cluster.fun.name = 'mcl_400_tprune.sym.n10_nosingletons_noloops')$itemlists
         )
 
         newmodel_cw1 <- list(
@@ -175,7 +175,7 @@ with(inventory, {
             thresh = 0.8,
             minsize = 3,
             cluster.fun = function(X) { clust$cw(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'cw400_t0.8_nosingletons_noloops')$itemlists
+            cluster.fun.name = 'cw_400_t0.8_nosingletons_noloops')$itemlists
         )
 
         newmodel_cw2 <- list(
@@ -192,7 +192,7 @@ with(inventory, {
             thresh = 'mean',
             minsize = 3,
             cluster.fun = function(X) { clust$cw(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'cw400_tmean_nosingletons_noloops')$itemlists
+            cluster.fun.name = 'cw_400_tmean_nosingletons_noloops')$itemlists
         )
 
         newmodel_cw3 <- list(
@@ -209,7 +209,7 @@ with(inventory, {
             thresh = 'prune.sym.n10',
             minsize = 3,
             cluster.fun = function(X) { clust$cw(X, allowsingletons = F, remove_self_loops = T) },
-            cluster.fun.name = 'cw400_tprune.sym.n10_nosingletons_noloops')$itemlists
+            cluster.fun.name = 'cw_400_tprune.sym.n10_nosingletons_noloops')$itemlists
         )
 
         modelsaslist <- list()
@@ -218,7 +218,7 @@ with(inventory, {
         modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_mcl_tprune.sym.n10')]] <- newmodel_mcl3
         # modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_t0.8')]] <- newmodel_cw1
         # modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_tmean')]] <- newmodel_cw2
-        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_tprune.sym.n10')]] <- newmodel_cw2
+        # modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_tprune.sym.n10')]] <- newmodel_cw2
 
         return(modelsaslist)
       })
@@ -331,7 +331,7 @@ with(inventory, {
       # modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_mcl_tmean')]] <- newmodel_mcl2
       # modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_tmean')]] <- newmodel_cw2
       modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_mcl_tprune.sym.n10')]] <- newmodel_mcl3
-      modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_tprune.sym.n10')]] <- newmodel_cw3
+      # modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_tprune.sym.n10')]] <- newmodel_cw3
 
       return(modelsaslist)
     })
