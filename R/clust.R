@@ -81,7 +81,9 @@ with(clust, {
   #'
   #' prune graph / adjaceny matrix
   #'
-  graph.prune <- function(A, nkeep=3) {
+  #' prune graph by keeping top outgoing and top incomnig edges
+  #'
+  graph.prune.inout <- function(A, nkeep=3, make.symmetric = F) {
     # first make sure that selfloops are removed
     # assert ncol(A) == nrow(A)
     diag(A) <- 0
@@ -92,7 +94,7 @@ with(clust, {
       sampledrowidx <- sample(seq_len(nrow(A)))
       c(
         sampledcolidx[order(A[i, sampledcolidx], decreasing=T)[1:nkeep]],
-        sampledcolidx[order(A[sampledrowidx, i], decreasing=T)[1:nkeep]]
+        sampledrowidx[order(A[sampledrowidx, i], decreasing=T)[1:nkeep]]
       )
     })
     rowidx <- c(rep(idx, each=nkeep), c(maxidx[1:nkeep,]))
@@ -100,6 +102,32 @@ with(clust, {
     B <- matrix(0, nrow=nrow(A), ncol=ncol(A))
     rownames(B) <- rownames(A); colnames(B) <- colnames(A)
     B[cbind(rowidx, colidx)] <- A[cbind(rowidx, colidx)]
+    if(make.symmetric)
+      B <- (B + t(B)) / 2 # make symmetric
+    return(B)
+  }
+
+  #'
+  #' prune graph / adjaceny matrix
+  #'
+  #' prune graph by keeping top outgoing edges
+  #'
+  graph.prune <- function(A, nkeep=3, make.symmetric = T) {
+    # first make sure that selfloops are removed since they will have the strongest score
+    # assert ncol(A) == nrow(A)
+    diag(A) <- 0
+    idx <- seq_len(nrow(A))
+    rowidx <- c(sapply(idx, function(i){
+      # throw in some randomness (just in case the matrix is too homogenous)
+      sampledcolidx <- sample(seq_len(ncol(A)))
+      sampledcolidx[order(A[i, sampledcolidx], decreasing=T)[1:nkeep]]
+    }))
+    colidx <- rep(idx, each=nkeep)
+    B <- matrix(0, nrow=nrow(A), ncol=ncol(A))
+    rownames(B) <- rownames(A); colnames(B) <- colnames(A)
+    B[cbind(rowidx, colidx)] <- A[cbind(rowidx, colidx)]
+    if(make.symmetric)
+      B <- (B + t(B)) / 2 # make symmetric
     return(B)
   }
 
@@ -138,7 +166,7 @@ with(clust, {
       # igraph::V(net)$label.dist <- 0 # Distance between the label and the vertex
       # igraph::V(net)$label.degree <- 0  # The position of the label in relation to the vertex (use pi)
       # igraph::V(net)$label.family <- 'Times'  # Font family of the label (e.g. 'Times', 'Helvetica')
-      igraph::V(net)[names(labels)]$shape <- c('circle', 'square')[((labelfactorid %/% 240) %% 2)+1] # 'csquare', 'rectangle', 'crectangle', 'vrectangle', 'pie', 'raster', 'sphere', 'none'
+      # igraph::V(net)[names(labels)]$shape <- c('circle', 'square')[((labelfactorid %/% 240) %% 2)+1] # 'csquare', 'rectangle', 'crectangle', 'vrectangle', 'pie', 'raster', 'sphere', 'none'
 
       # edge properties
       igraph::E(net)$color <- 'gray'

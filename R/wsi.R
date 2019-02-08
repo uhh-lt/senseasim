@@ -145,7 +145,7 @@ with(wsi, {
   #'
   #' induce senses by clustering the similarity matrix
   #'
-  induceby.simcluster.jbt <- function(term, POS, jbtmodel, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+  induceby.simcluster.jbt <- function(term, POS, jbtmodel, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$mcl(X, remove_self_loops=T, allowsingletons=F) }, cluster.fun.name = 'mcl_noloop_nosingletons'){
     if(is.character(vsmodel))
       vsmodelname <- vsmodel
     else
@@ -177,17 +177,17 @@ with(wsi, {
     return(result)
   }
 
-  induceby.simcluster.jbt.debug <- function(term, POS, jbtmodel, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons', tkplot=F){
+  induceby.simcluster.jbt.debug <- function(term, POS, jbtmodel, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$mcl(X, remove_self_loops=T, allowsingletons=F) }, cluster.fun.name = 'mcl_noloop_nosingletons', tkplot=F){
     cfun <- function(X) { l<-cluster.fun(X); clust$graph.viz(X, l, labels.as.list=F, tkplot=tkplot); l }
     cfunname <- paste0(cluster.fun.name,'_clustertest_', util$randstring())
-    result <- wsi$induceby.simcluster.jbt(term=term, POS=POS, jbtmodel=jbtmodel ,vsmodel=vsmodel, cluster.fun=cfun, cluster.fun.name=cfunname)
+    result <- wsi$induceby.simcluster.jbt(term=term, POS=POS, jbtmodel=jbtmodel ,vsmodel=vsmodel, topn.similar.terms=topn.similar.terms, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=T, thresh=thresh, cluster.fun=cfun, cluster.fun.name=cfunname)
     return(result)
   }
 
   #'
   #' induce senses by clustering the similarity matrix
   #'
-  induceby.simcluster.vsm <- function(term, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+  induceby.simcluster.vsm <- function(term, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$mcl(X, remove_self_loops=T, allowsingletons=F) }, cluster.fun.name = 'mcl_noloop_nosingletons'){
     if(is.character(vsmodel))
       vsmodelname <- vsmodel
     else
@@ -207,7 +207,7 @@ with(wsi, {
     return(result)
   }
 
-  induceby.simcluster.vsm.debug <- function(term, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5,cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons', tkplot=F){
+  induceby.simcluster.vsm.debug <- function(term, vsmodel, topn.similar.terms = 500, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$mcl(X, remove_self_loops=T, allowsingletons=F) }, cluster.fun.name = 'mcl_noloop_nosingletons', tkplot=F){
     cfun <- function(X) { l<-cluster.fun(X); clust$graph.viz(X, l, labels.as.list=F, tkplot=tkplot); l }
     cfunname <- paste0(cluster.fun.name,'_clustertest_', util$randstring())
     result <- wsi$induceby.simcluster.vsm(term=term, vsmodel=vsmodel, topn.similar.terms=topn.similar.terms, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cfun, cluster.fun.name=cfunname)
@@ -217,7 +217,7 @@ with(wsi, {
   #'
   #' induce senses by clustering the similarity matrix of 'terms'
   #'
-  induceby.simcluster.terms <- function(terms, vsmodel, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$cw(X, allowsingletons = F) }, cluster.fun.name = 'cw_nosingletons'){
+  induceby.simcluster.terms <- function(terms, vsmodel, simfun = senseasim$cos, simfun.name = 'cos', simfun.issymmetric = T, thresh = 'median', minsize = 5, cluster.fun = function(X) { clust$mcl(X, remove_self_loops=T, allowsingletons=F) }, cluster.fun.name = 'mcl_noloop_nosingletons'){
     if(is.character(vsmodel))
       vsmodelname <- vsmodel
     else
@@ -229,11 +229,27 @@ with(wsi, {
       n <- if (is.array(terms) || is.data.frame(terms)) nrow(terms) else length(terms)
       SIM <- vs.similarity.matrix(terms, vsmodel, n = n, identifier = desc, simfun = simfun, simfun.name = simfun.name, simfun.issymmetric = simfun.issymmetric)
       # prune by threshold, i.e. everything below will be set to zero
-      if(is.character(thresh)){
-        threshfun <- eval(parse(text=thresh))
-        thresh <- threshfun(SIM)
+      if(is.numeric(thresh)) {
+        SIM[which(SIM < thresh)] <- 0
       }
-      SIM[which(SIM < thresh)] <- 0
+      # else
+      if(is.character(thresh)) {
+        if(grepl('prune', thresh)) {
+          nkeep <- as.numeric(gsub('^.*[.]n([0-9]+).*$', '\\1', thresh))
+          symmetric <- grepl('sym', thresh)
+          if(grepl('inout', thresh)) {
+            SIM <- clust$graph.prune.inout(SIM, nkeep = nkeep, make.symmetric = symmetric)
+          } else {
+            SIM <- clust$graph.prune(SIM, nkeep = nkeep, make.symmetric = symmetric)
+          }
+        }
+        else { # thresh a function that can be evaluated, such as 'median' or 'mean' and then applied
+          threshfun <- eval(parse(text=thresh))
+          thresh <- threshfun(SIM)
+          SIM[which(SIM < thresh)] <- 0
+        }
+      }
+      # go and cluster the graph
       labels <- cluster.fun(SIM)
       aslists <- clust$as.cluster.lists(labels)
       result <- list(labels = labels, itemlists = aslists, m = SIM)
