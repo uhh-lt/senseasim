@@ -219,13 +219,13 @@ with(evaluate, {
   }
 
   .evaluate <- function(dataset, scorefunname, vsmodelname, senseinventoryname, outfile, par) {
-    if(file.exists(paste0(outfile, '.tsvvv'))){
+    if(file.exists(paste0(outfile, '.tsv'))){
       scoredt <- data.table::fread(paste0(outfile, '.tsv'), sep='\t', header=T, stringsAsFactors=F, check.names=F, encoding='UTF-8', data.table=T, quote="")
     }
     else{
       scorefun <- .scorefuns[[scorefunname]]$fun
       rowfun <- function(i) {
-        row <- dataset[ii,]
+        row <- dataset[i,]
         util$message(sprintf('Processing row %s/%s: <%s,%s> with (%s, %s, %s)', i, nrow(dataset), row$word1, row$word2, vsmodelname, senseinventoryname, scorefunname))
         result <- scorefun(vsmodelname, senseinventoryname, row$word1, row$word2, if(!is.null(row$pos1)) row$pos1 else 'N', if(!is.null(row$pos2)) row$pos2 else 'N')
         # combine row with the concise result
