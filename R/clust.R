@@ -106,7 +106,7 @@ with(clust, {
   #'
   #' visualize graph / adjaceny matrix
   #'
-  graph.viz <- function(A, labels=NULL, labels.as.list=T, label.in.name=F, tkplot=F) {
+  graph.viz <- function(A, labels=NULL, labels.as.list=T, label.in.name=T, tkplot=F) {
     # ensure that weights are between 0 and 1
     miA <- min(A)
     if(miA < 0) # shift if needed
@@ -126,26 +126,25 @@ with(clust, {
       labelfactorid <- as.numeric(labelfactor)
 
       # vertex properties
-      igraph::V(net)$color <- c('lightgray', 'yellow', 'magenta', 'red', 'green', 'white', 'cyan', 'lightblue')[(labelfactorid %% 8)+1]
-      igraph::V(net)$shape <- c('circle', 'square')[((labelfactorid %/% 8) %% 2)+1] # 'csquare', 'rectangle', 'crectangle', 'vrectangle', 'pie', 'raster', 'sphere', 'none'
-      igraph::V(net)$frame.color <- c('black', 'red', 'green', 'blue', 'yellow', 'white')[((labelfactorid %/% 16) %% 6)+1]
-      #igraph::V(net)$size <- 14
+      igraph::V(net)[names(labels)]$color <- c('lightgray', 'yellow', 'magenta', 'red', 'green', 'white', 'cyan', 'lightblue')[(labelfactorid %% 8)+1]
+      igraph::V(net)[names(labels)]$frame.color <- c('black', 'red', 'green', 'blue', 'yellow', 'white')[((labelfactorid %/% 8) %% 6)+1]
+      #vertices$size <- 14
 
       # vertex labels and label properties
-      igraph::V(net)$label <- if(label.in.name) paste(rownames(A), labels, sep='##') else rownames(A)
-      igraph::V(net)$label.color <- c('black', 'red', 'green', 'blue', 'white')[((labelfactorid %/% 256) %% 5)+1]
+      igraph::V(net)[names(labels)]$label <- if(label.in.name) paste(names(labels), labelfactorid, sep='##') else names(vertices)
+      igraph::V(net)[names(labels)]$label.color <- c('black', 'red', 'green', 'blue', 'white')[((labelfactorid %/% 48) %% 5)+1]
       # igraph::V(net)$label.font <- 1   # Font: 1 plain, 2 bold, 3, italic, 4 bold italic, 5 symbol
       # igraph::V(net)$label.cex <- 1  # Font size (multiplication factor, device-dependent)
       # igraph::V(net)$label.dist <- 0 # Distance between the label and the vertex
       # igraph::V(net)$label.degree <- 0  # The position of the label in relation to the vertex (use pi)
       # igraph::V(net)$label.family <- 'Times'  # Font family of the label (e.g. 'Times', 'Helvetica')
+      igraph::V(net)[names(labels)]$shape <- c('circle', 'square')[((labelfactorid %/% 240) %% 2)+1] # 'csquare', 'rectangle', 'crectangle', 'vrectangle', 'pie', 'raster', 'sphere', 'none'
 
       # edge properties
       igraph::E(net)$color <- 'gray'
       igraph::E(net)$lty <- 'solid'   # Line type, could be 0 or “blank”, 1 or “solid”, 2 or “dashed”, 3 or “dotted”, 4 or “dotdash”, 5 or “longdash”, 6 or “twodash”
       igraph::E(net)$curved <- 0.3 # Edge curvature, range 0-1 (FALSE sets it to 0, TRUE to 0.5)
       igraph::E(net)$width <- igraph::E(net)$weight
-
     }
 
     if(tkplot){
