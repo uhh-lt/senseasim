@@ -40,12 +40,16 @@ with(cclDef, {
     parallel::clusterExport(ccl, c('X','FUN', 'initializationfun', 'finalizationfun'), envir=environment())
     parallel::clusterExport(ccl, exportitems, envir=exportitemsenvir)
     parallel::clusterEvalQ(ccl, { initializationfun() })
-
-    result <- parallel::parLapply(ccl, X, FUN)
-
-    parallel::clusterEvalQ(ccl, { finalizationfun() })
-    parallel::stopCluster(ccl)
-
+    result <- tryCatch(
+      expr = {
+        parallel::parLapply(ccl, X, FUN)
+      },
+      finally = {
+        util$message('Shutting down cluster!')
+        parallel::clusterEvalQ(ccl, { finalizationfun() })
+        parallel::stopCluster(ccl)
+      }
+    )
     return(result)
   }
 

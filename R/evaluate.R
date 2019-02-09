@@ -203,6 +203,7 @@ with(evaluate, {
         return(NA)
       }
     )
+
     if(!is.list(res))
       return(evalrow)
 
