@@ -18,10 +18,10 @@ with(vsm, {
   .models_available <- function() { c(
     # automatically add models
     .fasttext.generate_cc_from_dir(paste0(cache$data_dir(),'/fasttext/cc-157')),
-    # .txt.getembeddings(),
+    .txt.getembeddings(),
     # manually define some models
     list(
-      man_en_ft_simplewiki_300d = list(
+      en_ft_simplewiki_300d = list(
         lang = 'en',
         basename = 'ft_simplewiki_300d',
         init = function() .fasttext.load(
@@ -32,7 +32,7 @@ with(vsm, {
         getvector = function(word_or_index) .fasttext.get_vector('en_ft_simplewiki_300d', word_or_index),
         getterm = function(index) .fasttext.get_term('en_ft_simplewiki_300d', index)
       ),
-      man_en_ft_wiki_300d = list(
+      en_ft_wiki_300d = list(
         lang = 'en',
         basename = 'ft_wiki_300d',
         init = function() .fasttext.load(
