@@ -188,21 +188,24 @@ with(evaluate, {
     return(en)
   }
 
-  .evaluate.row <- function(evalrow, evali=1, evaln=1, par=NULL){
+  .evaluate.row <- function(evalrow, evali=1, evaln=1, par=NULL, catcherrors=T){
     evaluation_ <- evalrow[,-'loaddata', with=F]
     util$message(sprintf('Current eval: [%d/%d] \n%s', evali, evaln,  paste0('\t', colnames(evaluation_), ': ', evaluation_, collapse = '\n')))
     # load
     dataset <- evalrow$loaddata[[1]]()
 
-    res <- tryCatch(
-      expr = {
-        .evaluate(dataset, evalrow$scorefun, evalrow$vsmodel, evalrow$inventory, evalrow$outfile, par)
-      },
-      error = function(err) {
-        util$message(sprintf('Eval [%d/%d] failed:  \n%s', evali, evaln, err))
-        return(NA)
-      }
-    )
+    if(catcherrors)
+      res <- tryCatch(
+        expr = {
+          .evaluate(dataset, evalrow$scorefun, evalrow$vsmodel, evalrow$inventory, evalrow$outfile, par)
+        },
+        error = function(err) {
+          util$message(sprintf('Eval [%d/%d] failed:  \n%s', evali, evaln, err))
+          return(NA)
+        }
+      )
+    else
+      res <- .evaluate(dataset, evalrow$scorefun, evalrow$vsmodel, evalrow$inventory, evalrow$outfile, par)
 
     if(!is.list(res))
       return(evalrow)

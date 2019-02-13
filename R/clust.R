@@ -84,9 +84,11 @@ with(clust, {
   #' prune graph by keeping top outgoing and top incomnig edges
   #'
   graph.prune.inout <- function(A, nkeep=3, make.symmetric = F) {
-    # first make sure that selfloops are removed
     # assert ncol(A) == nrow(A)
+    # first make sure that selfloops are removed
     diag(A) <- 0
+    # reset nkeep to the min(nkeep, len)
+    nkeep <- min(nrow(A), nkeep)
     idx <- seq_len(nrow(A))
     maxidx <- sapply(idx, function(i){
       # throw in some randomness (just in case the matrix is too homogenous)
@@ -113,9 +115,11 @@ with(clust, {
   #' prune graph by keeping top outgoing edges
   #'
   graph.prune <- function(A, nkeep=3, make.symmetric = T) {
-    # first make sure that selfloops are removed since they will have the strongest score
     # assert ncol(A) == nrow(A)
+    # first make sure that selfloops are removed since they will have the strongest score
     diag(A) <- 0
+    # reset nkeep to the min(nkeep, len)
+    nkeep <- min(nrow(A), nkeep)
     idx <- seq_len(nrow(A))
     rowidx <- c(sapply(idx, function(i){
       # throw in some randomness (just in case the matrix is too homogenous)
