@@ -52,7 +52,7 @@ with(cache, {
             util$message(sprintf('Saving result to \'%s\'.', filename))
             saveRDS(r, file = filename)
           }
-
+          r
         },
         error = function(err) {
           util$message('Computefun threw error, skip saving result.')
