@@ -118,9 +118,9 @@ with(jbt, {
         js_doc <- jsonlite::fromJSON(txt = url)
         return(js_doc)
       },
-      error = function(cond) {
-        util$message(sprintf('ERROR retrieving \'%s\': %s', url, cond))
-        return(err)
+      error = function(err) {
+        util$message(sprintf('ERROR retrieving \'%s\': %s', url, err))
+        return(NA)
       }
     )
   }
@@ -144,7 +144,7 @@ with(jbt, {
       .get_json_from_url(url)
     })
 
-    if (is.list(js_doc) || is.array(js_doc)) {
+    if (is.list(js_doc)) {
       if (length(js_doc$results) > 0) {
         sim <- data.frame(list(jbtterm=js_doc$results$key, score=js_doc$results$score), row.names = NULL)
         sim['term'] <- .cleanJbtTerm(sim$jbtterm)
@@ -178,7 +178,7 @@ with(jbt, {
       .get_json_from_url(url)
     })
 
-    if (!is.null(json_doc)) {
+    if (is.list(js_doc)) {
       if (length(json_doc$result) > 0){
         if (isas){
           return(Filter(function(l) length(l) > 0, json_doc$result$isas))

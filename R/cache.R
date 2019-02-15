@@ -20,7 +20,7 @@ with(cache, {
   get_filename <- function(term, POS, dirname, prefix = '', postfix = '.rds')
     file.path(dirname, paste0(prefix, tolower(term), '_', get_case_representation(term), '$', tolower(POS), '_', get_case_representation(POS), postfix))
 
-  load <- function(filename, computefun, save.null = T){
+  load <- function(filename, computefun, save.null = F){
     if (!file.exists(filename)) {
       # compute and save
       result <- .load.locked(filename, computefun, save.null)
@@ -39,26 +39,26 @@ with(cache, {
 
       result <- tryCatch(
         expr = {
-          computefun()
+          r <- computefun()
+          if(is.null(r)) {
+            if(save.null) {
+              util$message(sprintf('Saving result to \'%s\'.', filename))
+              saveRDS(r, file = filename)
+            }
+          } else if(is.logical(r) && is.na(r)){
+            util$message('Result is NA, skip saving.')
+          }
+          else {
+            util$message(sprintf('Saving result to \'%s\'.', filename))
+            saveRDS(r, file = filename)
+          }
+
         },
         error = function(err) {
           util$message('Computefun threw error, skip saving result.')
           return(NA)
         }
       )
-
-      if(is.null(result)) {
-        if(save.null) {
-          util$message(sprintf('Saving result to \'%s\'.', filename))
-          saveRDS(result, file = filename)
-        }
-      } else if(is.na(result)) {
-        util$message('Result is NA, skip saving.')
-      }
-      else{
-        util$message(sprintf('Saving result to \'%s\'.', filename))
-        saveRDS(result, file = filename)
-      }
 
     } else {
       # load

@@ -155,9 +155,7 @@ with(wsi, {
     result <- cache$load(filename = fname, computefun = function() {
       sims <- jbtmodel$sim(term=term, POS=POS)
       if(nrow(sims) < 2){
-        util$message(sprintf('Jbtmodel \'%s\' returned no similarity terms for \'%s\'. Using vector space similarities.', jbtmodel$name, term))
-        result <- induceby.simcluster.vsm(term=term, vsmodel=vsmodel, topn.similar.terms=topn.similar.terms, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
-        return(result)
+        return(NULL)
       }
       sims <- sims[-c(1),] # the most similar term should be the term itself, remove it
       if(nrow(sims) < 2){
@@ -171,6 +169,13 @@ with(wsi, {
       result <- induceby.simcluster.terms(terms=sims$term, vsmodel=vsmodel, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
       return(result)
     })
+
+    # backoff
+    if(is.null(result)){
+      util$message(sprintf('Jbtmodel \'%s\' returned no similarity terms for \'%s\'. Using vector space similarities.', jbtmodel$name, term))
+      result <- induceby.simcluster.vsm(term=term, vsmodel=vsmodel, topn.similar.terms=topn.similar.terms, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
+    }
+
     if(is.numeric(minsize) && minsize > 1){
       result$itemlists <- Filter(function(l) length(l) >= minsize, result$itemlists)
     }
