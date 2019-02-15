@@ -36,16 +36,30 @@ with(cache, {
     # compute the result and save it. This must not be done in parallel!
     lock__ = flock::lock(paste0(filename,'.lock'));
     if(!file.exists(filename)){
-      result <- computefun()
+
+      result <- tryCatch(
+        expr = {
+          computefun()
+        },
+        error = function(err) {
+          util$message('Computefun threw error, skip saving result.')
+          return(NA)
+        }
+      )
+
       if(is.null(result)) {
         if(save.null) {
           util$message(sprintf('Saving result to \'%s\'.', filename))
           saveRDS(result, file = filename)
         }
-      }else{
+      } else if(is.na(result)) {
+        util$message('Result is NA, skip saving.')
+      }
+      else{
         util$message(sprintf('Saving result to \'%s\'.', filename))
         saveRDS(result, file = filename)
       }
+
     } else {
       # load
       util$message(sprintf('loading \'%s\'.', filename))

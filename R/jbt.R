@@ -120,7 +120,7 @@ with(jbt, {
       },
       error = function(cond) {
         util$message(sprintf('ERROR retrieving \'%s\': %s', url, cond))
-        return(NULL)
+        return(err)
       }
     )
   }
@@ -144,7 +144,7 @@ with(jbt, {
       .get_json_from_url(url)
     })
 
-    if (!is.null(js_doc)) {
+    if (is.list(js_doc) || is.array(js_doc)) {
       if (length(js_doc$results) > 0) {
         sim <- data.frame(list(jbtterm=js_doc$results$key, score=js_doc$results$score), row.names = NULL)
         sim['term'] <- .cleanJbtTerm(sim$jbtterm)
