@@ -252,7 +252,11 @@ with(evaluate, {
           ccl = par,
           exportitems = ls(envir = environment()),
           exportitemsenvir = environment(),
-          initializationfun = function(){ library(senseasim); senseasim$.init(); },
+          initializationfun = function(){
+            library(senseasim)
+            Sys.setenv(http_proxy='http://172.16.2.30:8080')
+            Sys.setenv(https_proxy='https://172.16.2.30:8080')
+          },
           X = ind,
           FUN = rowfun
         )
