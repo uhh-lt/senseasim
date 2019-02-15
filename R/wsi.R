@@ -174,6 +174,7 @@ with(wsi, {
     if(is.null(result)){
       util$message(sprintf('Jbtmodel \'%s\' returned no similarity terms for \'%s\'. Using vector space similarities.', jbtmodel$name, term))
       result <- induceby.simcluster.vsm(term=term, vsmodel=vsmodel, topn.similar.terms=topn.similar.terms, simfun=simfun, simfun.name=simfun.name, simfun.issymmetric=simfun.issymmetric, thresh=thresh, minsize=minsize, cluster.fun=cluster.fun, cluster.fun.name=cluster.fun.name)
+      return(result)
     }
 
     if(is.numeric(minsize) && minsize > 1){

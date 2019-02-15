@@ -252,7 +252,11 @@ with(evaluate, {
           ccl = par,
           exportitems = ls(envir = environment()),
           exportitemsenvir = environment(),
-          initializationfun = function(){ library(senseasim) },
+          initializationfun = function(){
+            library(senseasim)
+            Sys.setenv(http_proxy='http://172.16.2.30:8080')
+            Sys.setenv(https_proxy='https://172.16.2.30:8080')
+          },
           X = ind,
           FUN = rowfun
         )
@@ -293,7 +297,7 @@ with(evaluate, {
 
   #' @param dsetfilterfun NULL or filterfunction
   #' @test e.g. eval only de datasets with runeval(par = NULL, evalfilter = function(dset) dset$lang == 'en'))
-  .run.eval <- function(par = NULL, evaluations = NULL, evalfilter = NULL, only_best_inventory=F) {
+  .run.eval <- function(par = NULL, evaluations = NULL, evalfilter = NULL, only_best_inventory=F, catchevalerrors =T) {
     .init()
 
     if(is.null(evaluations))
@@ -307,7 +311,7 @@ with(evaluate, {
     results <- lapply(seq_along(evalind), function(eval_i_ind) {
       eval_i <- evalind[[eval_i_ind]]
       evaluation <- evaluations[eval_i,]
-      evaluation_result <- .evaluate.row(evaluation, eval_i_ind, length(evalind), par)
+      evaluation_result <- .evaluate.row(evaluation, eval_i_ind, length(evalind), par, catchevalerrors)
       return(evaluation_result)
     });
 
