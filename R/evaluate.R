@@ -134,7 +134,8 @@ with(evaluate, {
           # generate row
           e <- di
           e$scorefun <- scorefunname
-          e$outfile <- paste0(di$filename, '-scored-', e$scorefun)
+          e$mdesc <- e$scorefun
+          e$outfile <- paste0(di$filename, '-scored-', e$mdesc)
           return(e)
         } else {
           # get the vector space models for lang
@@ -146,7 +147,8 @@ with(evaluate, {
               e <- di
               e$scorefun <- scorefunname
               e$vsmodel <- vsmodelname
-              e$outfile <- paste0(e$filename, '-scored-', e$scorefun, '__', e$vsmodel)
+              e$mdesc <- paste0(e$scorefun, '__', e$vsmodel)
+              e$outfile <- paste0(e$filename, '-scored-', e$mdesc)
               return(e)
             } else {
               # get all sense inventories for lang
@@ -169,7 +171,8 @@ with(evaluate, {
                 e$scorefun <- scorefunname
                 e$vsmodel <- vsmodelname
                 e$inventory <- sinventory
-                e$outfile <- paste0(e$filename, '-scored-', e$scorefun, '__', e$vsmodel, '__', e$inventory)
+                e$mdesc <- paste0(e$scorefun, '__', e$vsmodel, '__', e$inventory)
+                e$outfile <- paste0(e$filename, '-scored-', e$mdesc)
                 return(e)
               })
               eii <- data.table::rbindlist(eii, use.names=T, fill=T)
@@ -344,7 +347,7 @@ with(evaluate, {
     .try.run.eval(par, NULL, ftfilter, only_best_inventory)
   }
 
-  .get.results <- function(results){
+  .results.get <- function(results){
     #
     if(is.data.frame(results)){
       resultsdt <- results
@@ -359,24 +362,72 @@ with(evaluate, {
         stop('Unknown result format.')
       }
     }
+    if(!'mdesc' %in% colnames(resultsdt)){ # estimate mdesc from output filename and move the column right next to it
+      resultsdt$mdesc <- gsub('.*-scored-', '', resultsdt$outfile)
+      outfilecolidx <- which(colnames(resultsdt) == 'outfile')
+      neworder <- c(colnames(resultsdt)[1:(outfilecolidx-1)], 'mdesc', colnames(resultsdt)[outfilecolidx:(ncol(resultsdt)-1)])
+      data.table::setcolorder(resultsdt, neworder)
+    }
     return(resultsdt)
   }
 
-  .merge.results <- function(results) {
-    resultsdt <- .get.results(results)
-    evalidcolidx <- which(colnames(resultsdt) == 'evalid')
-    scorecolumns <- colnames(resultsdt)[(evalidcolidx+1):ncol(resultsdt)]
-    scorecolumns <- scorecolumns[which(scorecolumns != 'numsenses_avg')]
-    merged <- resultsdt[,1:evalidcolidx]
-    merged <- unique(merged, by='eid')
-    for(scorecolumn in scorecolumns){
-      subdata <- resultsdt[, c('eid', scorecolumn), with=F]
-      subdata <- subdata[!is.na(get(scorecolumn)), ] # remove NAs
-      merged <- merge(merged, subdata, by='eid')
-    }
-    merged <- merged[,-c('scorefun'), with=F]
-    return(merged)
+  # .merge.results <- function(results) {
+  #   resultsdt <- .get.results(results)
+  #   evalidcolidx <- which(colnames(resultsdt) == 'evalid')
+  #   scorecolumns <- colnames(resultsdt)[(evalidcolidx+1):ncol(resultsdt)]
+  #   scorecolumns <- scorecolumns[which(scorecolumns != 'numsenses_avg')]
+  #   merged <- resultsdt[,1:evalidcolidx]
+  #   merged <- unique(merged, by='eid')
+  #   for(scorecolumn in scorecolumns){
+  #     subdata <- resultsdt[, c('eid', scorecolumn), with=F]
+  #     subdata <- subdata[!is.na(get(scorecolumn)), ] # remove NAs
+  #     merged <- merge(merged, subdata, by='eid')
+  #   }
+  #   merged <- merged[,-c('scorefun'), with=F]
+  #   return(merged)
+  # }
+
+  .results.reformat <- function(results) {
+    resultsdt <- .results.get(results)
+    eidcolidx <- which(colnames(resultsdt) == 'eid')
+    typecolidx <- which(colnames(resultsdt) == 'type')
+    b<-(eidcolidx+1); e<-ncol(resultsdt)
+
+    datasetids <- unique(resultsdt$datasetid)
+
+
+    # for each dataset get the sub dt and squeeze all results into only one column
+    newrows <- lapply(datasetids, function(did) {
+
+      rdtdid <- resultsdt[datasetid == did]
+
+      # get the base information for the dataset
+      newdtrow <- rdtdid[1,1:typecolidx]
+
+
+      # get the indices where the value is not NA
+      notna <- which(!is.na(rdtdid[, b:e]),arr.ind = T)
+      # for each of those indices
+      for(i in seq_len(nrow(notna))){
+        # get the rowname / the method descriptor
+        mname <- rdtdid[notna[[i,1]],]$mdesc
+        # get the colname / the value name
+        vname <- colnames(rdtdid)[[(eidcolidx+notna[[i,2]])]]
+        val <- rdtdid[notna[[i,1]], get(vname)]
+        # remove the scorefunname
+        vname <- gsub('^.*__', '', vname)
+        scorename <- paste(mname, '__', vname)
+        col <- list(); col[[scorename]] <- val
+        # add a new column to newdtrow with scorename and value
+        newdtrow <- cbind(newdtrow, data.frame(col))
+      }
+      return(newdtrow)
+    })
+
+    newresultdt <- data.table::rbindlist(newrows,  use.names=T, fill=T)
+
   }
+
 
   .interpret.results <- function(results){
     resultsdt <- .get.results(results)
