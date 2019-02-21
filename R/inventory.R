@@ -213,12 +213,12 @@ with(inventory, {
         )
 
         modelsaslist <- list()
-        # modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_mcl_t0.8')]] <- newmodel_mcl1
-        # modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_mcl_tmean')]] <- newmodel_mcl2
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_mcl_t0.8')]] <- newmodel_mcl1
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_mcl_tmean')]] <- newmodel_mcl2
         modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_mcl_tprune.sym.n10')]] <- newmodel_mcl3
-        # modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_t0.8')]] <- newmodel_cw1
-        # modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_tmean')]] <- newmodel_cw2
-        # modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_tprune.sym.n10')]] <- newmodel_cw2
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_t0.8')]] <- newmodel_cw1
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_tmean')]] <- newmodel_cw2
+        modelsaslist[[stringr::str_interp('${jbtmodel$lang}_jbtsim__${jbtmodel$apiname}__${vsmbasename}__sim400cluster_cw_tprune.sym.n10')]] <- newmodel_cw3
 
         return(modelsaslist)
       })
@@ -326,12 +326,12 @@ with(inventory, {
       )
 
       modelsaslist <- list()
-      # modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_mcl_t0.8')]] <- newmodel_mcl1
-      # modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_t0.8')]] <- newmodel_cw1
-      # modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_mcl_tmean')]] <- newmodel_mcl2
-      # modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_tmean')]] <- newmodel_cw2
+      modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_mcl_t0.8')]] <- newmodel_mcl1
+      modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_mcl_tmean')]] <- newmodel_mcl2
       modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_mcl_tprune.sym.n10')]] <- newmodel_mcl3
-      # modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_tprune.sym.n10')]] <- newmodel_cw3
+      modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_t0.8')]] <- newmodel_cw1
+      modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_tmean')]] <- newmodel_cw2
+      modelsaslist[[stringr::str_interp('${lang}_vsmsim__${vsmbasename}__sim400cluster_cw_tprune.sym.n10')]] <- newmodel_cw3
 
       return(modelsaslist)
     })
