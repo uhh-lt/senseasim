@@ -362,10 +362,34 @@ with(evaluate, {
         stop('Unknown result format.')
       }
     }
+
     if(!'mdesc' %in% colnames(resultsdt)){ # estimate mdesc from output filename and move the column right next to it
       resultsdt$mdesc <- gsub('.*-scored-', '', resultsdt$outfile)
+
+      # identify the jobimtext model from inventory name
+      hasjbtmodel <- grepl('^.*_(jbtsim|jbtsense)__([^_]+).*$', resultsdt$mdesc)
+      resultsdt$jbtmodelapi <- gsub('^.*_(jbtsim|jbtsense)__([^_]+).*$', '\\2', resultsdt$mdesc)
+      resultsdt$jbtmodelapi[!hasjbtmodel] <- NA
+
+      # prepare jbt apiname list
+      jbtapis <- lapply(jbt$models, function(m) m()$apiname)
+      resultsdt$mdesc <- lapply(1:nrow(resultsdt), function(i){
+        # remove language tag
+        mdesc <- gsub(paste0('_',resultsdt[i,]$lang,'_'), '_', resultsdt[i,]$mdesc)
+        # get language independent jbt model descriptor
+        # get the jbtmodel
+        jbtmodel <- which(jbtapis == resultsdt[i,]$jbtmodelapi)
+        jbtmodeldesc <- ''
+        if(length(jbtmodel) > 0)
+          jbtmodeldesc <- jbt$models[[jbtmodel]]()$desc
+        # replace jbt model name
+        mdesc <- gsub('_(jbtsim|jbtsense)__[^_]+(__)?', paste0('_\\1_', jbtmodeldesc, '\\2'), mdesc)
+        return(mdesc)
+      })
+
+      # move the new column
       outfilecolidx <- which(colnames(resultsdt) == 'outfile')
-      neworder <- c(colnames(resultsdt)[1:(outfilecolidx-1)], 'mdesc', colnames(resultsdt)[outfilecolidx:(ncol(resultsdt)-1)])
+      neworder <- c(colnames(resultsdt)[1:(outfilecolidx-1)], 'jbtmodelapi','mdesc', colnames(resultsdt)[outfilecolidx:(ncol(resultsdt)-2)])
       data.table::setcolorder(resultsdt, neworder)
     }
     return(resultsdt)
