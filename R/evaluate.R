@@ -481,14 +481,21 @@ with(evaluate, {
     rc <- evaluate$.results.topN(r, n=5)
     if(write) {
       if(is.character(results) && file.exists(results)) {
-        # fout <- paste0(results, '.bycol.tsv')
-        # write.table(r, quote=F, sep ='\t', row.names=F, col.names=T, file=fout)
-        for(name in colnames(rc)){
-          if(is.list(rc[,get(name)]))
-            data.table::set(rc, i = NULL, name, sapply(rc[,get(name)], paste, sep='', collapse = ' | '))
+        r_copy <- data.table::copy(r)
+        for(name in colnames(r_copy)){
+          if(is.list(r_copy[,get(name)]))
+            data.table::set(r_copy, i = NULL, name, sapply(r_copy[,get(name)], paste, sep='', collapse = ' | '))
+        }
+        fout <- paste0(results, '.bycol.tsv')
+        write.table(r_copy, quote=F, sep ='\t', row.names=F, col.names=T, file=fout)
+
+        rc_copy <- data.table::copy(rc)
+        for(name in colnames(rc_copy)){
+          if(is.list(rc_copy[,get(name)]))
+            data.table::set(rc_copy, i = NULL, name, sapply(rc_copy[,get(name)], paste, sep='', collapse = ' | '))
         }
         fout <- paste0(results, '.concise.tsv')
-        write.table(rc, quote=F, sep ='\t', row.names=F, col.names=T, file=fout)
+        write.table(rc_copy, quote=F, sep ='\t', row.names=F, col.names=T, file=fout)
       } else {
         util$message('Unable to determine file location. Cannot write results.')
       }
