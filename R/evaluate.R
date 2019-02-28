@@ -359,7 +359,7 @@ with(evaluate, {
           resultsdt <- readRDS(results)
         }
       } else {
-        stop('Unknown result format.')
+        stop('Unknown result format or file does not exist.')
       }
     }
 
@@ -391,25 +391,10 @@ with(evaluate, {
       outfilecolidx <- which(colnames(resultsdt) == 'outfile')
       neworder <- c(colnames(resultsdt)[1:(outfilecolidx-1)], 'jbtmodelapi','mdesc', colnames(resultsdt)[outfilecolidx:(ncol(resultsdt)-2)])
       data.table::setcolorder(resultsdt, neworder)
+
     }
     return(resultsdt)
   }
-
-  # .merge.results <- function(results) {
-  #   resultsdt <- .get.results(results)
-  #   evalidcolidx <- which(colnames(resultsdt) == 'evalid')
-  #   scorecolumns <- colnames(resultsdt)[(evalidcolidx+1):ncol(resultsdt)]
-  #   scorecolumns <- scorecolumns[which(scorecolumns != 'numsenses_avg')]
-  #   merged <- resultsdt[,1:evalidcolidx]
-  #   merged <- unique(merged, by='eid')
-  #   for(scorecolumn in scorecolumns){
-  #     subdata <- resultsdt[, c('eid', scorecolumn), with=F]
-  #     subdata <- subdata[!is.na(get(scorecolumn)), ] # remove NAs
-  #     merged <- merge(merged, subdata, by='eid')
-  #   }
-  #   merged <- merged[,-c('scorefun'), with=F]
-  #   return(merged)
-  # }
 
   .results.reformat <- function(results) {
     resultsdt <- .results.get(results)
@@ -419,7 +404,6 @@ with(evaluate, {
 
     datasetids <- unique(resultsdt$datasetid)
 
-
     # for each dataset get the sub dt and squeeze all results into only one column
     newrows <- lapply(datasetids, function(did) {
 
@@ -427,7 +411,6 @@ with(evaluate, {
 
       # get the base information for the dataset
       newdtrow <- rdtdid[1,1:typecolidx]
-
 
       # get the indices where the value is not NA
       notna <- which(!is.na(rdtdid[, b:e]),arr.ind = T)
@@ -449,16 +432,73 @@ with(evaluate, {
     })
 
     newresultdt <- data.table::rbindlist(newrows,  use.names=T, fill=T)
+  }
 
+  #'
+  #' results must be in reformatted format
+  #'
+  .results.topN <- function(results, n=5){
+    typecolidx <- which(colnames(results) == 'type')
+    # add column for top 5 methods per dataset
+    score_cols <- colnames(results)[(typecolidx+1):ncol(results)]
+    score_cols <- grep('.numsenses_',score_cols, value = T, invert = T)
+    score_cols <- grep('standardcos__ft_cc_300.__.sim', score_cols, value = T, invert = T)
+
+    results_concise <- results[,2:typecolidx]
+
+    topNnames <- lapply(seq_len(nrow(results)), function(i) {
+      topN <- order(results[i, ..score_cols], decreasing = T)[1:n]
+      topNnames_ <- score_cols[topN]
+      topNnames_
+    })
+    results_concise$topNvals <- lapply(seq_len(nrow(results)), function(i) {
+      topNnames_ <- unlist(topNnames[[i]])
+      topNvals <- unlist(results[i, ..topNnames_])
+      # ceil
+      topNvals <- round(topNvals, 3)
+      names(topNvals) <- NULL
+      topNvals
+    })
+    results_concise$topNnumsensesavg <- lapply(seq_len(nrow(results)), function(i) {
+      topNnames_ <- unlist(topNnames[[i]])
+      topNnames_numsenses <- gsub('[.]__[.][^.]+$','.__.numsenses_avg', topNnames_)
+      topNnumsensesavg <- unlist(results[i, ..topNnames_numsenses])
+      names(topNnumsensesavg) <- NULL
+      round(topNnumsensesavg, 3)
+    })
+    results_concise$topdif_cos <- sapply(seq_len(nrow(results)), function(i) {
+      topNvals <- unlist(results_concise[i,]$topNvals)
+      topval <- topNvals[[1]]
+      topvaldif <- topval - round(unlist(results[i,]$standardcos__ft_cc_300.__.sim), 3)
+      round(topvaldif, 3)
+    })
+    results_concise$topNnames <- topNnames
+    return(results_concise)
+  }
+
+  .results.get.concise <- function(results, write=T){
+    r <- evaluate$.results.reformat(results)
+    rc <- evaluate$.results.topN(r, n=5)
+    if(write) {
+      if(is.character(results) && file.exists(results)) {
+        # fout <- paste0(results, '.bycol.tsv')
+        # write.table(r, quote=F, sep ='\t', row.names=F, col.names=T, file=fout)
+        for(name in colnames(rc)){
+          if(is.list(rc[,get(name)]))
+            data.table::set(rc, i = NULL, name, sapply(rc[,get(name)], paste, sep='', collapse = ' | '))
+        }
+        fout <- paste0(results, '.concise.tsv')
+        write.table(rc, quote=F, sep ='\t', row.names=F, col.names=T, file=fout)
+      } else {
+        util$message('Unable to determine file location. Cannot write results.')
+      }
+    }
+    return(rc)
   }
 
 
   .interpret.results <- function(results){
     resultsdt <- .get.results(results)
-    mergedresults <- .merge.results(resultsdt)
-    evalidcolidx <- which(colnames(mergedresults) == 'evalid')
-    scorecolumns <- colnames(mergedresults)[(evalidcolidx+1):ncol(mergedresults)]
-    scorecolumns <- scorecolumns[which(scorecolumns != 'numsenses_avg')]
     interp <- lapply(scorecolumns, function(scorecolumn) {
       avg <- mean(unlist(mergedresults[, scorecolumn, with=F]))
       stddev <- sd(unlist(mergedresults[, scorecolumn, with=F]))
@@ -467,8 +507,6 @@ with(evaluate, {
         stddev = stddev
       )
     })
-    interp <- do.call(rbind, interp)
-    interp$method <- scorecolumns
     return(interp)
   }
 
@@ -477,6 +515,5 @@ with(evaluate, {
 # e <- evaluate$.generate_evaluations(all_matches = T)
 # ef <- e[(lang == 'en' | lang == 'de') & type=='mc' & (is.na(vsmodel) | grepl('_ft_cc_', vsmodel) | grepl('_ft_simplewiki_', vsmodel)),]
 # evaluate$.run.eval(par=1, ef)
-
 
 
