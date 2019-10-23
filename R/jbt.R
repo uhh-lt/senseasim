@@ -178,7 +178,7 @@ with(jbt, {
       .get_json_from_url(url)
     })
 
-    if (is.list(js_doc)) {
+    if (is.list(json_doc)) {
       if (length(json_doc$result) > 0){
         if (isas){
           return(Filter(function(l) length(l) > 0, json_doc$result$isas))

@@ -347,6 +347,16 @@ with(evaluate, {
     .try.run.eval(par, NULL, ftfilter, only_best_inventory)
   }
 
+  .results.find <- function(details=F){
+    files <- list.files('./results', pattern = '*.tsv', full.names = T)
+    files <- grep('[0-9][.]tsv$', files, value = T)
+    filedetails <- file.info(files)
+    ordered_by_modified <- order(filedetails$mtime, decreasing=T)
+    if(details)
+      return(filedetails[ordered_by_modified])
+    return(files[ordered_by_modified])
+  }
+
   .results.get <- function(results){
     #
     if(is.data.frame(results)){
@@ -502,7 +512,6 @@ with(evaluate, {
     }
     return(rc)
   }
-
 
   .interpret.results <- function(results){
     resultsdt <- .get.results(results)

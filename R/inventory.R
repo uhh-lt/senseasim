@@ -11,6 +11,7 @@ with(inventory, {
     if(!.INITIALIZED || reinitialize){
       vsm$.init()
       jbt$.init()
+      tsv$.init()
       models_available <- .models_available()
       models <<- .get_models(T, models_available)
       .INITIALIZED <- T
@@ -64,6 +65,7 @@ with(inventory, {
       )
     ),
     # automatically add inventories
+    .generate_from_tsvmodels(),
     .generate_from_jbtmodels(),
     .generate_from_vsm()
   )}
@@ -79,6 +81,24 @@ with(inventory, {
       return(matching_models[[1]])
     }
     return(NULL)
+  }
+
+  .generate_from_tsvmodels <- function() {
+    tsv_models <- tsv$models
+    tsv_models_available <- tsv$.models_available()
+    models <- lapply(names(tsv_models), function(modelname){
+      model <- tsv_models[[modelname]]
+      newmodel = list(
+        lang = tsv_models_available[[modelname]]$lang,
+        senses = function(term, POS = NA) model()$senses(term)
+      )
+      newtsvinventoryname <- stringr::str_interp('${newmodel$lang}_tsv__${tsv_models_available[[modelname]]$basename}')
+      modelaslist <- list()
+      modelaslist[[newtsvinventoryname]] <- newmodel
+      return(modelaslist)
+    })
+    models <- unlist(models, recursive = F, use.names = T)
+    return(models)
   }
 
   .generate_from_jbtmodels <- function() {
