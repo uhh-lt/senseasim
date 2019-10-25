@@ -82,7 +82,6 @@ with(tsv, {
   }
 
   .getmodel <- function(modelname, models=.models_available()){
-    print(modelname)
     if(!(modelname %in% names(.models_loaded))){
       model <- models[[modelname]]
       loaded_model <- model$init()
