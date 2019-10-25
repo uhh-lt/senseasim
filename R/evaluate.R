@@ -162,6 +162,7 @@ with(evaluate, {
               # add the jbtsim and vsmsim type inventory
               sinventoriesfiltered <- c(
                 sinventoriesfiltered,
+                tryCatch({matches<-grep('_tsv_', sinventories, value = T); if (all_matches) matches else matches[[1]]}, error = function(e) c()),
                 tryCatch({matches<-grep('_jbtsim_', sinventories, value = T); if (all_matches) matches else matches[[1]]}, error = function(e) c()),
                 tryCatch({matches<-grep('_vsmsim_', sinventories, value = T); if (all_matches) matches else matches[[1]]}, error = function(e) c())
               )
@@ -340,6 +341,12 @@ with(evaluate, {
         return(err)
       }
     )
+  }
+
+  .try.run.tsveval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F){
+    ftfilter <- function(e) (is.na(e$vsmodel) || grep('_ft_cc_', e$vsmodel)) && evalfilter(e)
+    tsvfilter <- function(e) (grep('_tsv_', e$inventory)) && ftfilter(e)
+    .try.run.eval(par, NULL, ftfilter, only_best_inventory)
   }
 
   .try.run.fteval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F){
