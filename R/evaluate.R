@@ -346,7 +346,8 @@ with(evaluate, {
   .try.run.tsveval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F){
     ftfilter <- function(e) (is.na(e$vsmodel) || grep('_ft_cc_', e$vsmodel)) && evalfilter(e)
     tsvfilter <- function(e) (grep('_tsv_', e$inventory)) && ftfilter(e)
-    .try.run.eval(par, NULL, ftfilter, only_best_inventory)
+    scorfunfilter <- function(e) (e$scorefun == 'sensasim_t5_l0.5') && tsvfilter(e)
+    .try.run.eval(par, NULL, scorfunfilter, only_best_inventory)
   }
 
   .try.run.fteval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F){
