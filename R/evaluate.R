@@ -346,7 +346,7 @@ with(evaluate, {
   .try.run.tsveval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F){
     ftfilter <- function(e) (is.na(e$vsmodel) || grep('_ft_cc_', e$vsmodel)) && evalfilter(e)
     tsvfilter <- function(e) (grep('_tsv_', e$inventory)) && ftfilter(e)
-    scorfunfilter <- function(e) (e$scorefun == 'sensasim_t5_l0.5') && tsvfilter(e)
+    scorfunfilter <- function(e) (e$scorefun != 'sensasim_t500_l0') && tsvfilter(e)
     .try.run.eval(par, NULL, scorfunfilter, only_best_inventory)
   }
 
@@ -522,7 +522,7 @@ with(evaluate, {
   }
 
   .interpret.results <- function(results){
-    resultsdt <- .get.results(results)
+    resultsdt <- .results.get(results)
     interp <- lapply(scorecolumns, function(scorecolumn) {
       avg <- mean(unlist(mergedresults[, scorecolumn, with=F]))
       stddev <- sd(unlist(mergedresults[, scorecolumn, with=F]))
