@@ -135,6 +135,7 @@ with(evaluate, {
           e <- di
           e$scorefun <- scorefunname
           e$mdesc <- e$scorefun
+          e$jbtmodelapi <- NA
           e$outfile <- paste0(di$filename, '-scored-', e$mdesc)
           return(e)
         } else {
@@ -147,8 +148,9 @@ with(evaluate, {
               e <- di
               e$scorefun <- scorefunname
               e$vsmodel <- vsmodelname
-              e$mdesc <- paste0(e$scorefun, '__', e$vsmodel)
-              e$outfile <- paste0(e$filename, '-scored-', e$mdesc)
+              e$mdesc <- paste0(e$scorefun, '__', vsmodelbasename)
+              e$jbtmodelapi <- NA
+              e$outfile <- paste0(e$filename, '-scored-', e$scorefun, '__', e$vsmodel)
               return(e)
             } else {
               # get all sense inventories for lang
@@ -166,14 +168,32 @@ with(evaluate, {
                 tryCatch({matches<-grep('_jbtsim_', sinventories, value = T); if (all_matches) matches else matches[[1]]}, error = function(e) c()),
                 tryCatch({matches<-grep('_vsmsim_', sinventories, value = T); if (all_matches) matches else matches[[1]]}, error = function(e) c())
               )
+              jbtapis <- lapply(jbt$models, function(m) m()$apiname)
               eii <- lapply(sinventoriesfiltered, function(sinventory) {
+                #####
+                isjbtmodel <- grepl('^.*_(jbtsim|jbtsense)__([^_]+).*$', sinventory)
+                if(isjbtmodel){
+                  jbtmodelapi <- gsub('^.*_(jbtsim|jbtsense)__([^_]+).*$', '\\2', sinventory)
+                  jbtmodel <- which(jbtapis == jbtmodelapi)
+                  jbtmodeldesc <- ''
+                  if(length(jbtmodel) > 0)
+                    jbtmodeldesc <- jbt$models[[jbtmodel]]()$desc
+                  # replace jbt model name and remove language tag
+                  sinventory_basename <- gsub('^.*_(jbtsim|jbtsense)__[^_]+(__)?', paste0('\\1_', jbtmodeldesc, '\\2'), sinventory)
+                }else{
+                  jbtmodelapi <- NA
+                  # remove language tag
+                  sinventory_basename <- gsub('^[^_]+_', '', sinventory)
+                }
+                ######
                 # generate row
                 e <- di
                 e$scorefun <- scorefunname
                 e$vsmodel <- vsmodelname
                 e$inventory <- sinventory
-                e$mdesc <- paste0(e$scorefun, '__', e$vsmodel, '__', e$inventory)
-                e$outfile <- paste0(e$filename, '-scored-', e$mdesc)
+                e$jbtmodelapi <- jbtmodelapi
+                e$mdesc <- paste0(e$scorefun, '__', vsmodelbasename, '__', sinventory_basename)
+                e$outfile <- paste0(e$filename, '-scored-', e$scorefun, '__', e$vsmodel, '__', e$inventory)
                 return(e)
               })
               eii <- data.table::rbindlist(eii, use.names=T, fill=T)
@@ -368,7 +388,7 @@ with(evaluate, {
   .results.get <- function(results){
     #
     if(is.data.frame(results)){
-      resultsdt <- results
+      return(results)
     } else {
       if(is.character(results) && file.exists(results)) {
         if(grepl('[.]tsv$', results)) {
@@ -381,7 +401,7 @@ with(evaluate, {
       }
     }
 
-    if(!'mdesc' %in% colnames(resultsdt)){ # estimate mdesc from output filename and move the column right next to it
+    if(!'mdesc' %in% colnames(resultsdt)){ # downwards compatibility: estimate mdesc from output filename and move the column right next to it
       resultsdt$mdesc <- gsub('.*-scored-', '', resultsdt$outfile)
 
       # identify the jobimtext model from inventory name
