@@ -148,6 +148,7 @@ with(evaluate, {
               e <- di
               e$scorefun <- scorefunname
               e$vsmodel <- vsmodelname
+              e$vsmodeltype <- vsmodelbasename
               e$mdesc <- paste0(e$scorefun, '__', vsmodelbasename)
               e$jbtmodelapi <- NA
               e$outfile <- paste0(e$filename, '-scored-', e$scorefun, '__', e$vsmodel)
@@ -190,7 +191,9 @@ with(evaluate, {
                 e <- di
                 e$scorefun <- scorefunname
                 e$vsmodel <- vsmodelname
+                e$vsmodeltype <- vsmodelbasename
                 e$inventory <- sinventory
+                e$inventorytype <- sinventory_basename
                 e$jbtmodelapi <- jbtmodelapi
                 e$mdesc <- paste0(e$scorefun, '__', vsmodelbasename, '__', sinventory_basename)
                 e$outfile <- paste0(e$filename, '-scored-', e$scorefun, '__', e$vsmodel, '__', e$inventory)
