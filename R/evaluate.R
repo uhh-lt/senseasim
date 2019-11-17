@@ -369,8 +369,8 @@ with(evaluate, {
   .try.run.tsveval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F){
     ftfilter <- function(e) (is.na(e$vsmodel) || grep('_ft_cc_', e$vsmodel)) && evalfilter(e)
     tsvfilter <- function(e) (is.na(e$inventory) || grep('_tsv_', e$inventory)) && ftfilter(e)
-    scorfunfilter <- function(e) (e$scorefun != 'sensasim_t500_l0') && tsvfilter(e)
-    .try.run.eval(par, NULL, scorfunfilter, only_best_inventory)
+    #scorfunfilter <- function(e) (e$scorefun != 'sensasim_t500_l0') && tsvfilter(e)
+    .try.run.eval(par, NULL, tsvfilter, only_best_inventory)
   }
 
   .try.run.fteval <- function(par = NULL, evalfilter = function(e) T, only_best_inventory=F){
@@ -388,14 +388,14 @@ with(evaluate, {
     return(files[ordered_by_modified])
   }
 
-  .results.get <- function(results){
+  .results.get <- function(results, stringsAsFactors = T){
     #
     if(is.data.frame(results)){
       return(results)
     } else {
       if(is.character(results) && file.exists(results)) {
         if(grepl('[.]tsv$', results)) {
-          resultsdt <- data.table::fread(file = results, quote = '', sep = '\t', header = T, data.table = T) # write.table(results[,-'loaddata', with=F], quote=F, sep ='\t', row.names=F, col.names=T, file=paste0(resultsfile, '.tsv'))
+          resultsdt <- data.table::fread(file = results, quote = '', sep = '\t', header = T, data.table = T, stringsAsFactors = stringsAsFactors) # write.table(results[,-'loaddata', with=F], quote=F, sep ='\t', row.names=F, col.names=T, file=paste0(resultsfile, '.tsv'))
         } else {
           resultsdt <- readRDS(results)
         }
@@ -437,8 +437,8 @@ with(evaluate, {
     return(resultsdt)
   }
 
-  .results.reformat <- function(results) {
-    resultsdt <- .results.get(results)
+  .results.reformat <- function(results, stringsAsFactors = T) {
+    resultsdt <- .results.get(results, stringsAsFactors = stringsAsFactors)
     eidcolidx <- which(colnames(resultsdt) == 'eid')
     typecolidx <- which(colnames(resultsdt) == 'type')
     b<-(eidcolidx+1); e<-ncol(resultsdt)
