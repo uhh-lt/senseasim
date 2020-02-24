@@ -18,7 +18,9 @@ with(tsv, {
 
   .models_available <- function(){c(
     #
-    .generate_cc_from_dir(paste0(cache$data_dir(),'/senseinventories/fasttext/induced'))
+    .generate_cc_from_dir(paste0(cache$data_dir(),'/senseinventories/fasttext/induced')),
+    #
+    .generate_ft_from_dir(paste0(cache$data_dir(),'/senseinventories/fasttext/induced_new'))
     #
   )}
 
@@ -30,6 +32,30 @@ with(tsv, {
     models <- lapply(modelfiles, function(modelfile) {
       fname <- basename(modelfile)
       newmodelname <- gsub('\\s*', '', gsub('^([^.]+).([^.]+).(\\d+).*(top\\d+)\\.inventory.tsv$', '\\2_ft_\\1_\\3_\\4', fname))
+      newmodel <- list(
+        location = modelfile,
+        lang = gsub('^([^_]+)_(.*)$', '\\1', newmodelname),
+        basename = gsub('^([^_]+)_(.*)$', '\\2', newmodelname),
+        init = function() .load(modelfile = modelfile, keyw = keyw, lines=Inf, transform=tolower),
+        senses = function(word, POS = NA) .getsenses(newmodelname, word),
+        transform = function(w) tolower(w)
+      )
+      modelaslist <- list(newmodel)
+      names(modelaslist) <- newmodelname
+      return(modelaslist)
+    })
+    models <- unlist(models, recursive = F, use.names = T)
+    return(models)
+  }
+
+  .generate_ft_from_dir <- function(location, keyw=F){
+    if(!dir.exists(location))
+      return(list())
+
+    modelfiles <- list.files(path = location, pattern = '*inventory.tsv$', full.names = T, recursive = T)
+    models <- lapply(modelfiles, function(modelfile) {
+      fname <- basename(modelfile)
+      newmodelname <- gsub('\\s*', '', gsub('^([^_]+)_([^.]+).(n\\d+).*(minsize\\d+)\\.inventory.tsv$', '\\2_ftnew_\\1_\\3_\\4', fname))
       newmodel <- list(
         location = modelfile,
         lang = gsub('^([^_]+)_(.*)$', '\\1', newmodelname),
