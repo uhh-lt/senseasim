@@ -55,7 +55,7 @@ with(tsv, {
     modelfiles <- list.files(path = location, pattern = '*inventory.tsv$', full.names = T, recursive = T)
     models <- lapply(modelfiles, function(modelfile) {
       fname <- basename(modelfile)
-      newmodelname <- gsub('\\s*', '', gsub('^([^_]+)_([^.]+).(n\\d+).*(minsize\\d+)\\.inventory.tsv$', '\\2_ftnew_\\1_\\3_\\4', fname))
+      newmodelname <- gsub('\\s*', '', gsub('^([^_]+)_([^.]+).n(\\d+).*(minsize\\d+)\\.inventory.tsv$', '\\2_ft_cc_300_top\\3_\\4', fname))
       newmodel <- list(
         location = modelfile,
         lang = gsub('^([^_]+)_(.*)$', '\\1', newmodelname),
