@@ -12,7 +12,7 @@ with(sensevectors, {
     }
   }
 
-  get_sense_vectors <- function(term, POS, vsmodel, senseinventory, topn_sense_terms = 5, shift_lambda = .5) {
+  get_sense_vectors <- function(term, POS, vsmodel, senseinventory, topn_sense_terms = 5, shift_lambda = .5, simfun = senseasim$cos, simweight = F) {
     # prepare the result object
     R <- newEmptyObject()
     R$status <- list()
@@ -85,6 +85,12 @@ with(sensevectors, {
 
     # get the vectors as submatrix
     M <- vsmodel$vectors(uniqueindex$term)
+    if(simweight){
+      # get the individual similarities as vector
+      sims <- sapply(seq_len(nrow(M)), function(i) simfun(M[1,], M[i,]) )
+      # weight the vectors with their cosine sim
+      M <- M * sims
+    }
 
     # get the submatrices for each sense and produce the sense vectors
     R$v <- matrix(nrow = 0, ncol = vsmodel$vdim)

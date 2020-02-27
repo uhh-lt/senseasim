@@ -27,12 +27,12 @@ with(senseasim, {
   #'
   #' score
   #'
-  score <- function(term1, term2, POS1, POS2, vsmodel, senseinventory, topn_sense_terms = 5, shift_lambda = 0.5, simfun = senseasim$cos) {
+  score <- function(term1, term2, POS1, POS2, vsmodel, senseinventory, topn_sense_terms = 5, shift_lambda = 0.5, simfun = senseasim$cos, simweight = F) {
     if(is.null(POS1)) POS1 <- 'N'
     if(is.null(POS2)) POS2 <- 'N'
 
-    R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1, vsmodel = vsmodel, senseinventory = senseinventory, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
-    R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2, vsmodel = vsmodel, senseinventory = senseinventory, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda)
+    R1 <- sensevectors$get_sense_vectors(term = term1, POS = POS1, vsmodel = vsmodel, senseinventory = senseinventory, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda, simfun = simfun, simweight = simweight)
+    R2 <- sensevectors$get_sense_vectors(term = term2, POS = POS2, vsmodel = vsmodel, senseinventory = senseinventory, topn_sense_terms = topn_sense_terms, shift_lambda = shift_lambda, simfun = simfun, simweight = simweight)
     SIM <- sim.matrix(R1$v_shift, R2$v_shift, simfun = simfun)
     maxscore <- max.sim(SIM)
     avgscore <- mean(SIM)

@@ -56,7 +56,21 @@ with(evaluate, {
     }, valuenames = c('sim'), depends=list(vsm=T, inventory=F)),
     #
     sensasim_t5_l0.5 = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
-      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5)
+      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5, simfun = senseasim$cos, simweight = F)
+      r_concise <- r_full$maxscore
+      r_concise$t1.nsenses <- r_full$t1_info$nsenses
+      r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
+      r_concise$t2.nsenses <- r_full$t2_info$nsenses
+      r_concise$t2.is.unk <- r_full$t2_info$index[1,]$unknown
+      r_concise$avgscore <- r_full$avgscore
+      return(list(
+        concise = r_concise,
+        full    = r_full
+      ))
+    }, valuenames = c('max_sim', 'avgscore'), depends=list(vsm=T, inventory=T)),
+    #
+    sensasim_t5_l0.5_cosweight = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
+      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 5, shift_lambda = 0.5, simfun = senseasim$cos, simweight = T)
       r_concise <- r_full$maxscore
       r_concise$t1.nsenses <- r_full$t1_info$nsenses
       r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
@@ -70,7 +84,49 @@ with(evaluate, {
     }, valuenames = c('max_sim', 'avgscore'), depends=list(vsm=T, inventory=T)),
     #
     sensasim_t500_l0 = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
-      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 500, shift_lambda = 0)
+      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 500, shift_lambda = 0, simfun = senseasim$cos, simweight = F)
+      r_concise <- r_full$maxscore
+      r_concise$t1.nsenses <- r_full$t1_info$nsenses
+      r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
+      r_concise$t2.nsenses <- r_full$t2_info$nsenses
+      r_concise$t2.is.unk <- r_full$t2_info$index[1,]$unknown
+      r_concise$avgscore <- r_full$avgscore
+      return(list(
+        concise = r_concise,
+        full    = r_full
+      ))
+    }, valuenames = c('max_sim', 'avgscore'), depends=list(vsm=T, inventory=T)),
+    #
+    sensasim_t500_l0.5 = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
+      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 500, shift_lambda = 0.5, simfun = senseasim$cos, simweight = F)
+      r_concise <- r_full$maxscore
+      r_concise$t1.nsenses <- r_full$t1_info$nsenses
+      r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
+      r_concise$t2.nsenses <- r_full$t2_info$nsenses
+      r_concise$t2.is.unk <- r_full$t2_info$index[1,]$unknown
+      r_concise$avgscore <- r_full$avgscore
+      return(list(
+        concise = r_concise,
+        full    = r_full
+      ))
+    }, valuenames = c('max_sim', 'avgscore'), depends=list(vsm=T, inventory=T)),
+    #
+    sensasim_t500_l0_cosweight = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
+      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 500, shift_lambda = 0, simfun = senseasim$cos, simweight = T)
+      r_concise <- r_full$maxscore
+      r_concise$t1.nsenses <- r_full$t1_info$nsenses
+      r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
+      r_concise$t2.nsenses <- r_full$t2_info$nsenses
+      r_concise$t2.is.unk <- r_full$t2_info$index[1,]$unknown
+      r_concise$avgscore <- r_full$avgscore
+      return(list(
+        concise = r_concise,
+        full    = r_full
+      ))
+    }, valuenames = c('max_sim', 'avgscore'), depends=list(vsm=T, inventory=T)),
+    #
+    sensasim_t500_l0.5_cosweight = list(fun = function(vsmodelname, senseinventoryname, w1, w2, POS1, POS2) {
+      r_full <- senseasim$score(term1 = w1, POS1 = 'N', term2 = w2, POS2 = 'N', vsmodelname, senseinventoryname, topn_sense_terms = 500, shift_lambda = 0.5, simfun = senseasim$cos, simweight = T)
       r_concise <- r_full$maxscore
       r_concise$t1.nsenses <- r_full$t1_info$nsenses
       r_concise$t1.is.unk <- r_full$t1_info$index[1,]$unknown
